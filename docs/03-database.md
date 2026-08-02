@@ -299,17 +299,22 @@ The IndexedDB schema mirrors Postgres one-to-one, plus two local-only tables.
 ```ts
 // src/lib/db/schema.ts
 db.version(1).stores({
-  tasks:        'id, status, planned_date, updated_at, deleted_at, [status+planned_date]',
-  subtasks:     'id, task_id, position, updated_at, deleted_at',
-  tags:         'id, name, updated_at',
-  task_tags:    '[task_id+tag_id], task_id, tag_id',
-  sessions:     'id, local_date, task_id, mode, updated_at, [mode+local_date]',
-  achievements: 'key, unlocked_at',
-  settings:     'user_id',
+  tasks:        'id, status, plannedDate, updatedAt, completedAt, [status+plannedDate]',
+  subtasks:     'id, taskId, updatedAt, [taskId+position]',
+  tags:         'id, name, updatedAt',
+  taskTags:     '[taskId+tagId], taskId, tagId',
+  sessions:     'id, localDate, taskId, updatedAt, [mode+localDate]',
+  achievements: 'key, unlockedAt',
+  settings:     'userId',
   // local only:
   outbox:       'id, table, createdAt',
   meta:         'key',           // lastPulledAt per table, timer runtime, device id
 })
 ```
+
+Two properties of IndexedDB shape this, and both differ from the Postgres side:
+
+- **Index names are camelCase**, matching the stored objects. Dexie indexes property names, and the rows written here are camelCase all the way through — snake_case only exists on the Postgres side of `lib/sync/mappers.ts`.
+- **`deletedAt` is not indexed.** IndexedDB cannot index `null`, so a row with `deletedAt: null` is simply absent from that index, which makes "where deletedAt is null" impossible to express as a range query. Live rows are the overwhelming majority, so the repo filters them in JS instead.
 
 `meta` holds the live timer runtime (§3 of [02-architecture.md](02-architecture.md)) so a reload mid-session restores the countdown exactly. It never syncs — a running timer is device-local.

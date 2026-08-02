@@ -219,8 +219,10 @@ export interface Repo {
   updateSettings(patch: Partial<Settings>): Promise<void>
 
   // — stats
-  getHeatmap(weeks: number): Promise<HeatmapCell[]>
   getStreaks(): Promise<{ current: number; longest: number }>
+  getWeekDots(): Promise<Array<{ date: LocalDate; active: boolean }>>
+  getDayStats(date?: LocalDate): Promise<DayStats>
+  getHeatmap(weeks: number): Promise<HeatmapCell[]>
   getPersonalBests(range: 'day' | 'week' | 'month'): Promise<PersonalBests>
   getAchievements(): Promise<Achievement[]>
   evaluateAchievements(): Promise<string[]>      // returns newly unlocked keys
@@ -232,7 +234,16 @@ export interface Repo {
 }
 ```
 
-Read paths in components use `useLiveQuery` against Dexie directly *through repo-provided query builders* — the async methods above are for mutations and computed reads. Keep the split explicit so live-updating lists don't get stuck behind promises.
+Read paths in components use `useLiveQuery` against Dexie directly *through repo-provided query builders* — the async methods above are for mutations and computed reads. Keep the split explicit so live-updating lists don't get stuck behind promises. The builders live on `repo.live`.
+
+**Phased implementation.** The interface is complete from Phase 1 so the contract never moves, but four methods belong to later phases and throw a named error until then rather than returning something plausible and wrong:
+
+| Method | Lands in |
+|--------|----------|
+| `autoPlan`, `undoAutoPlan` | Phase 5 |
+| `getHeatmap`, `getPersonalBests`, `evaluateAchievements` | Phase 6 |
+
+`getStreaks`, `getWeekDots`, and `getDayStats` are implemented in Phase 1 because the Focus Timer's streak card (Phase 3) needs them before the reports screen exists.
 
 ## 4. Stats shapes
 
