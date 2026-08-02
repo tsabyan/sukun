@@ -48,7 +48,7 @@ Three pillars:
 | **Reports** | 12-week activity heatmap, monthly session bar chart, achievements grid. All computed from local data. |
 | **Personal bests** | Best day / best week / best month, current + longest streak, all-time weekly rankings. No social leaderboard. |
 | **Settings** | Durations, auto-start toggles, sound + volume, notifications, theme (system/light/dark), default timer mode. |
-| **Auth** | Anonymous by default — zero-friction first run. Optional email magic-link upgrade to sync across devices. |
+| **Auth** | No account required, ever. The app is fully usable signed out; an optional email magic link turns on cross-device sync. No passwords, no anonymous accounts. |
 | **Offline** | Full functionality with no network. Sync resumes automatically. |
 | **PWA** | Installable, offline shell, app icon, splash, standalone display. |
 | **Notifications** | Local notification + sound when a phase ends. Works when the tab is backgrounded. |

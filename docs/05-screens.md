@@ -372,7 +372,7 @@ Grouped inset list, iOS style.
 | **Timer** | Focus length · Short break · Long break · Sessions until long break · Auto-start breaks · Auto-start focus |
 | **Sound & alerts** | Alert sound (5 options, tap to preview) · Volume · Notifications (requests permission) · Haptics |
 | **Appearance** | Theme (System / Light / Dark) · Default timer mode (Ring / Flip) · Week starts on |
-| **Account** | Signed-in state. Anonymous → "Save your data" with an email field. Signed in → email, Sync now, Sign out. |
+| **Account** | Signed out → "Sync across devices" with an email field, and a footnote making clear the app already works without one. Signed in → email, Sync now, Sign out ("Everything stays on this device"). No anonymous accounts. |
 | **Data** | Export JSON · Import JSON · Delete all data (type DELETE to confirm) |
 | **About** | Version · What's new · Send feedback (mailto) · Privacy |
 

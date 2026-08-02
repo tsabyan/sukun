@@ -7,13 +7,18 @@ import { getSupabase, isSupabaseConfigured, siteUrl } from './client'
 /**
  * Auth, kept deliberately thin — docs/02-architecture.md §5.
  *
- * First run signs in anonymously, so the app has a real auth.uid() from the
- * first second without asking for anything. Adding an email later *links* to
- * that same user, which is why signing in never migrates data: the rows
- * already belong to the right uid.
+ * There is no anonymous sign-in. Until someone adds an email the app has no
+ * Supabase session at all and runs entirely on IndexedDB, which is the normal
+ * state rather than a degraded one: the first run asks for nothing and works
+ * offline, and sync is opt-in.
+ *
+ * The cost of that choice is that rows created before signing in carry a
+ * device-local user id rather than a real auth.uid(). `adoptUserId` rewrites
+ * them once, on the first sync after sign-in. With anonymous auth that step
+ * was free; without it, it is the thing that must not break.
  */
 
-export type AccountState = 'unconfigured' | 'loading' | 'anonymous' | 'linked'
+export type AccountState = 'unconfigured' | 'loading' | 'signed-out' | 'linked'
 
 interface AuthStore {
   session: Session | null
@@ -27,14 +32,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   set: (patch) => set(patch),
 }))
 
-function classify(session: Session | null): AccountState {
-  if (!session) return 'loading'
-  return session.user.email ? 'linked' : 'anonymous'
-}
+const classify = (session: Session | null): AccountState =>
+  session ? 'linked' : 'signed-out'
 
 /**
- * Signs in anonymously if there is no session yet. Failure is not an error
- * worth surfacing — the app is local-first and simply stays local.
+ * Reads any existing session. Never creates one — signing in is always a
+ * deliberate act by the user.
  */
 export async function ensureSession(): Promise<Session | null> {
   const supabase = getSupabase()
@@ -44,21 +47,12 @@ export async function ensureSession(): Promise<Session | null> {
   }
 
   // Wrapped because an unreachable project throws rather than returning an
-  // error: a wrong ref, a deleted project or a dead network would otherwise
-  // leave this pending forever and take the account UI down with it. Sync is
-  // optional, so every failure here degrades to local-only.
+  // error: a wrong ref, a paused project or a dead network would otherwise
+  // leave this pending forever and take the account UI down with it.
   try {
     const { data } = await supabase.auth.getSession()
-    if (data.session) {
-      useAuthStore.getState().set({ session: data.session, state: classify(data.session) })
-      return data.session
-    }
-
-    const { data: created, error } = await supabase.auth.signInAnonymously()
-    if (error) throw error
-
-    useAuthStore.getState().set({ session: created.session, state: classify(created.session) })
-    return created.session
+    useAuthStore.getState().set({ session: data.session, state: classify(data.session) })
+    return data.session
   } catch (error) {
     console.warn(
       '[sukun] sync unavailable; running local-only',
@@ -80,7 +74,7 @@ export function watchAuth(): () => void {
   return () => data.subscription.unsubscribe()
 }
 
-/** Links an email to the current (possibly anonymous) user. */
+/** Magic link — the only way in. No passwords to store, forget, or leak. */
 export async function sendMagicLink(email: string): Promise<{ error: string | null }> {
   const supabase = getSupabase()
   if (!supabase) return { error: 'Sync is not configured on this build.' }
@@ -93,10 +87,12 @@ export async function sendMagicLink(email: string): Promise<{ error: string | nu
   return { error: error?.message ?? null }
 }
 
+/**
+ * Signing out leaves every local row exactly where it is. Nothing is deleted
+ * and nothing is hidden — the app simply stops syncing.
+ */
 export async function signOut(): Promise<void> {
   const supabase = getSupabase()
   await supabase?.auth.signOut()
-  // Straight back to a fresh anonymous identity, so the app keeps working
-  // rather than dropping into a signed-out dead end.
-  await ensureSession()
+  useAuthStore.getState().set({ session: null, state: 'signed-out' })
 }

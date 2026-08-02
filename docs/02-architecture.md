@@ -195,9 +195,16 @@ This is correct enough for a single-user app. Don't build CRDTs.
 
 Soft delete only. Every table has `deleted_at timestamptz`. Queries filter `deleted_at is null`. Hard-delete rows locally after 30 days. This makes delete sync trivial and gives you a free undo.
 
-### Anonymous → signed-in migration
+### Signed-out → signed-in migration
 
-Anonymous Supabase users already have a real `auth.uid()`, so rows created anonymously carry a valid `user_id`. Linking an email to an anonymous user preserves that UID — **the data migrates with zero work.** This is the main reason to use anonymous auth over a made-up local UUID.
+**There is no anonymous auth.** A user who never signs in has no Supabase session at all, and the app runs entirely on IndexedDB. That is the normal state, not a degraded one: first run asks for nothing, works offline, and leaves no account behind for someone who tried the app once.
+
+The cost is that rows created before signing in carry a device-local `userId` (`local-device`) rather than a real `auth.uid()`. `adoptUserId()` in `lib/db/identity.ts` rewrites every local row onto the account uid, once, on the first sync after sign-in. Anonymous auth would have made this a no-op; without it, **this is the step that must not break** — if it fails, every pre-existing row is invisible to RLS and silently never syncs. It runs inside one Dexie transaction and is covered by tests.
+
+Two consequences worth holding onto:
+
+- **The waitlist pushes without a session.** Almost nobody hitting the Pro gate will have signed in, and waitlist conversion is the price signal the validation plan rests on. Those rows go up on the `anon` role with a null `user_id`; everything else waits for an account.
+- **Signing out changes nothing locally.** No rows are deleted or hidden. The app simply stops syncing.
 
 ## 6. Rendering strategy
 

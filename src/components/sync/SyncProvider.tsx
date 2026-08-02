@@ -13,16 +13,17 @@ import { startSync } from '@/lib/sync/engine'
  */
 export function SyncProvider() {
   useEffect(() => {
-    let stopSync: (() => void) | undefined
     const stopWatching = watchAuth()
 
-    void ensureSession().then((session) => {
-      if (session) stopSync = startSync()
-    })
+    // Started unconditionally, not gated on a session. Signed out is the
+    // normal state — the cycle then does nothing except push waitlist
+    // signups, and it is already listening when a magic link lands.
+    void ensureSession()
+    const stopSync = startSync()
 
     return () => {
       stopWatching()
-      stopSync?.()
+      stopSync()
     }
   }, [])
 

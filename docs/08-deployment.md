@@ -49,7 +49,7 @@ supabase db push
 | Setting | Value |
 |---------|-------|
 | Settings → API → **Exposed schemas** | **Add `sukun`** alongside whatever is already there. Nothing works until this is set. |
-| Authentication → Providers → **Anonymous sign-ins** | **Enabled** — required for the zero-friction first run |
+| Authentication → Providers → **Anonymous sign-ins** | **Disabled.** The app never uses it — signed out means no session at all, and the client runs on IndexedDB. Leaving it on is an open door with nothing behind it. |
 | Authentication → Providers → Email | Enabled, **Confirm email on**, magic link only |
 | Authentication → URL Configuration → Site URL | your production URL |
 | Redirect URLs | `https://yourdomain.com/auth/callback`, `http://localhost:3000/auth/callback` |
@@ -67,7 +67,7 @@ K="$NEXT_PUBLIC_SUPABASE_ANON_KEY"; U="$NEXT_PUBLIC_SUPABASE_URL"
 curl -s "$U/rest/v1/tasks?select=id&limit=1" \
   -H "apikey: $K" -H "Authorization: Bearer $K" -H "Accept-Profile: sukun"
 
-# anonymous sign-ins on? expects a token, not anonymous_provider_disabled
+# anonymous sign-ins off? expects anonymous_provider_disabled
 curl -s -X POST "$U/auth/v1/signup" -H "apikey: $K" \
   -H "Content-Type: application/json" -d '{}'
 ```

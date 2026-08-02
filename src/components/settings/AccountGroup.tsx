@@ -83,7 +83,7 @@ export function AccountGroup() {
         <SettingsButtonRow label="Sync now" value={syncLabel} onClick={() => void syncNow()} />
         <SettingsButtonRow
           label="Sign out"
-          description="Your data stays on this device"
+          description="Everything stays on this device"
           onClick={() => void signOut().then(() => toast('Signed out'))}
         />
       </SettingsGroup>
@@ -93,7 +93,7 @@ export function AccountGroup() {
   return (
     <SettingsGroup
       title="Account"
-      footnote="Your data is on this device either way. An email is only needed to reach it from another one."
+      footnote="Sukun works without an account. Everything you have done so far is already saved on this device."
     >
       {sent ? (
         <div className="flex items-start gap-3 px-4 py-4">
@@ -101,15 +101,16 @@ export function AccountGroup() {
             <Check size={16} strokeWidth={2} className="text-accent" />
           </span>
           <p className="text-body text-ink-2">
-            Check {email} for a sign-in link. Opening it on this device keeps everything
-            you have already done.
+            Check {email} for a sign-in link. Open it on this device and everything you
+            have already done comes with you.
           </p>
         </div>
       ) : (
         <div className="flex flex-col gap-3 px-4 py-4">
-          <p className="text-body text-ink">Save your data</p>
+          <p className="text-body text-ink">Sync across devices</p>
           <p className="text-body-sm text-ink-2">
-            Add an email to reach your tasks and history from another device. No password.
+            Add an email to reach your tasks and history from anywhere else. No password,
+            and nothing you have already done is lost.
           </p>
           <Field
             label="Email"

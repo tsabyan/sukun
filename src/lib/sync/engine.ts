@@ -49,12 +49,57 @@ function isReady(entry: OutboxEntry, now: number): boolean {
 
 /* -------------------------------------------------------------------- push */
 
+/**
+ * Waitlist signups push without a session, on the anon role.
+ *
+ * Almost nobody hitting the Pro gate will have signed in, and waitlist
+ * conversion is the price signal the whole validation plan rests on
+ * (docs/10-validation.md §1). Leaving those rows stranded in the outbox until
+ * someone happens to create an account would quietly report zero demand.
+ */
+async function pushWaitlist(userId: string | null): Promise<void> {
+  const supabase = getSupabase()
+  if (!supabase) return
+
+  const now = Date.now()
+  const entries = (await pending(PUSH_BATCH)).filter(
+    (entry) => entry.table === 'waitlist' && isReady(entry, now),
+  )
+  if (entries.length === 0) return
+
+  const rows = entries.map((entry) => ({
+    ...toRemote('waitlist', entry.payload),
+    // The column is a nullable FK to auth.users; a device-local id is not a
+    // uuid and would fail the constraint.
+    user_id: userId,
+  }))
+
+  try {
+    // Insert, never upsert: waitlist has an INSERT policy and deliberately no
+    // UPDATE policy, and PostgREST needs both to upsert. A duplicate email is
+    // success — that address is already on the list.
+    const { error } = await supabase.from(REMOTE_TABLE.waitlist).insert(rows)
+    if (error && error.code !== '23505') throw error
+    await db.outbox.bulkDelete(entries.map((e) => e.id))
+  } catch (error) {
+    console.warn('[sukun] waitlist push failed', error)
+    await db.transaction('rw', db.outbox, async () => {
+      for (const entry of entries) {
+        await db.outbox.update(entry.id, {
+          attempts: entry.attempts + 1,
+          createdAt: Date.now(),
+        })
+      }
+    })
+  }
+}
+
 async function pushOnce(userId: string): Promise<{ pushed: number; stalled: number }> {
   const supabase = getSupabase()
   if (!supabase) return { pushed: 0, stalled: 0 }
 
   const now = Date.now()
-  const all = await pending(PUSH_BATCH)
+  const all = (await pending(PUSH_BATCH)).filter((entry) => entry.table !== 'waitlist')
   const ready = all.filter((entry) => isReady(entry, now))
   const stalled = all.filter((entry) => entry.attempts >= MAX_ATTEMPTS).length
 
@@ -82,19 +127,12 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
           user_id: userId,
         }))
 
-        if (table === 'waitlist') {
-          // Waitlist is insert-only: it has an INSERT policy and deliberately
-          // no UPDATE policy, and PostgREST needs both to upsert. A duplicate
-          // email is not a failure either — it means this address already
-          // signed up, which is exactly the state we wanted.
-          const { error } = await supabase.from(REMOTE_TABLE[table]).insert(rows)
-          if (error && error.code !== '23505') throw error
-        } else {
-          const { error } = await supabase
-            .from(REMOTE_TABLE[table])
-            .upsert(rows, { onConflict: CONFLICT_TARGET[table] })
-          if (error) throw error
-        }
+        const { error } = await supabase
+          .from(REMOTE_TABLE[table])
+          .upsert(rows, {
+            onConflict: CONFLICT_TARGET[table as Exclude<SyncTable, 'waitlist'>],
+          })
+        if (error) throw error
       }
 
       // Only join rows are ever hard-deleted; everything else soft-deletes and
@@ -215,6 +253,11 @@ export async function syncNow(): Promise<void> {
   const supabase = getSupabase()
   if (!supabase) return
 
+  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+    useSyncStore.getState().set({ state: 'offline' })
+    return
+  }
+
   let remoteUserId: string | undefined
   try {
     const { data } = await supabase.auth.getSession()
@@ -225,10 +268,16 @@ export async function syncNow(): Promise<void> {
     useSyncStore.getState().set({ state: 'offline' })
     return
   }
-  if (!remoteUserId) return
 
-  if (typeof navigator !== 'undefined' && navigator.onLine === false) {
-    useSyncStore.getState().set({ state: 'offline' })
+  // Signed out is the normal state, not an error. Only the waitlist moves.
+  if (!remoteUserId) {
+    running = true
+    try {
+      await pushWaitlist(null)
+    } finally {
+      running = false
+      useSyncStore.getState().set({ state: 'idle' })
+    }
     return
   }
 
@@ -236,9 +285,12 @@ export async function syncNow(): Promise<void> {
   useSyncStore.getState().set({ state: 'syncing' })
 
   try {
-    // Rows created before sign-in carry the device-local id; rewrite them once
-    // so they belong to the account and pass RLS.
+    // Everything created before sign-in carries the device-local id. Rewriting
+    // it onto the account is what makes those rows visible to RLS — with
+    // anonymous auth this was a no-op, so it is now the step that matters.
     if ((await currentUserId()) !== remoteUserId) await adoptUserId(remoteUserId)
+
+    await pushWaitlist(remoteUserId)
 
     const { stalled } = await pushOnce(remoteUserId)
     for (const table of PULL_TABLES) await pullTable(table)

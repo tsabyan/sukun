@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { db } from './schema'
-import { resetIdentityCache } from './identity'
+import { adoptUserId, resetIdentityCache } from './identity'
 import * as repo from './repo'
 import { computeStreaks, weekDots } from '@/lib/stats/streaks'
 import { addDays, today, toLocalDate } from '@/lib/utils/dates'
@@ -224,6 +224,65 @@ describe('outbox', () => {
     const ops = (await db.outbox.where('table').equals('taskTags').toArray()).map((e) => e.op)
     expect(ops).toContain('upsert')
     expect(ops).toContain('delete')
+  })
+})
+
+describe('adopting an account', () => {
+  /**
+   * Without anonymous auth, everything created before sign-in carries the
+   * device-local id. This rewrite is what makes those rows visible to RLS —
+   * if it misses a table, that data silently never syncs.
+   */
+  it('rewrites every table onto the account uid', async () => {
+    const accountId = '11111111-2222-3333-4444-555555555555'
+
+    const task = await repo.createTask({ title: 'Written before signing in' })
+    await repo.createSubtask(task.id, 'A step')
+    const tag = await repo.createTag('work')
+    await repo.setTaskTags(task.id, [tag.id])
+    await repo.recordSession({
+      taskId: task.id,
+      mode: 'focus',
+      plannedDurationSec: 1500,
+      actualDurationSec: 1500,
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      localDate: today(),
+      completed: true,
+      interrupted: false,
+    })
+    await repo.evaluateAchievements()
+    await repo.getSettings()
+
+    await adoptUserId(accountId)
+
+    const owners = await Promise.all([
+      db.tasks.toArray(),
+      db.subtasks.toArray(),
+      db.tags.toArray(),
+      db.taskTags.toArray(),
+      db.sessions.toArray(),
+      db.achievements.toArray(),
+    ])
+
+    for (const rows of owners) {
+      expect(rows.length).toBeGreaterThan(0)
+      expect(rows.every((row) => row.userId === accountId)).toBe(true)
+    }
+
+    // settings is keyed on userId, so the row has to be re-keyed, not patched
+    const settings = await repo.getSettings()
+    expect(settings.userId).toBe(accountId)
+    expect(await db.settings.count()).toBe(1)
+  })
+
+  it('is a no-op when the ids already match', async () => {
+    await repo.createTask({ title: 'Already owned' })
+    const before = await db.tasks.toArray()
+
+    await adoptUserId(before[0].userId)
+
+    expect((await db.tasks.toArray())[0].userId).toBe(before[0].userId)
   })
 })
 
