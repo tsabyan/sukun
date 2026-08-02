@@ -12,8 +12,9 @@ import {
 import { playAlert, resumeAudioIfNeeded, unlockAudio } from './audio'
 import { notifyPhaseEnd } from './notifications'
 import { getMeta, META_KEYS, setMeta } from '@/lib/db/schema'
-import { getSettings, getTask, recordSession } from '@/lib/db/repo'
-import { DEFAULT_SETTINGS } from '@/lib/db/seed'
+import { evaluateAchievements, getSettings, getTask, recordSession } from '@/lib/db/repo'
+import { achievementByKey, DEFAULT_SETTINGS } from '@/lib/db/seed'
+import { toast } from '@/components/ui/Toast'
 import { toLocalDate } from '@/lib/utils/dates'
 import { haptic } from '@/lib/utils/haptics'
 import type { Settings } from '@/lib/db/types'
@@ -119,6 +120,19 @@ function persist(runtime: TimerRuntime) {
     .catch(() => {})
 }
 
+/**
+ * Unlocks are announced with one quiet toast each — no modal, no confetti.
+ * Evaluated only after a completed focus session, since nothing else can move
+ * the needle on any badge.
+ */
+async function announceAchievements() {
+  const unlocked = await evaluateAchievements()
+  for (const key of unlocked) {
+    const badge = achievementByKey(key)
+    if (badge) toast(`${badge.name} unlocked`)
+  }
+}
+
 function saveSession(outcome: SessionOutcome) {
   writeChain = writeChain
     .then(() =>
@@ -136,6 +150,9 @@ function saveSession(outcome: SessionOutcome) {
         interrupted: outcome.interrupted,
       }),
     )
+    .then(() => {
+      if (outcome.mode === 'focus' && outcome.completed) return announceAchievements()
+    })
     .catch((error) => {
       console.error('[sukun] failed to record session', error)
     })

@@ -5,6 +5,15 @@ import { enqueue } from '@/lib/sync/outbox'
 import { newId } from '@/lib/utils/ids'
 import { nowIso, today } from '@/lib/utils/dates'
 import { computeStreaks, weekDots, type Streaks } from '@/lib/stats/streaks'
+import {
+  buildHeatmap,
+  buildPersonalBests,
+  countingDaysOf,
+  monthlyActivity,
+  type MonthlyBar,
+  type Range,
+} from '@/lib/stats/aggregate'
+import { newlyEarned } from '@/lib/stats/achievements'
 import { planDay } from '@/lib/planner/autoplan'
 import type {
   Achievement,
@@ -35,13 +44,6 @@ import type {
  *   - async methods below, for mutations and computed reads
  *   - `live` at the bottom, for queries that feed useLiveQuery
  */
-
-function notUntilPhase(method: string, phase: number, doc: string): never {
-  throw new Error(
-    `repo.${method}() arrives in Phase ${phase} (${doc}). ` +
-      'Nothing should be calling it yet.',
-  )
-}
 
 const alive = <T extends { deletedAt: string | null }>(row: T) => row.deletedAt === null
 
@@ -534,12 +536,33 @@ export async function getDayStats(date: LocalDate = today()): Promise<DayStats> 
   }
 }
 
-export async function getHeatmap(): Promise<HeatmapCell[]> {
-  return notUntilPhase('getHeatmap', 6, 'docs/06-data-contracts.md §4')
+async function allSessions(): Promise<Session[]> {
+  const rows = await db.sessions.toArray()
+  return rows.filter(alive)
 }
 
-export async function getPersonalBests(): Promise<PersonalBests> {
-  return notUntilPhase('getPersonalBests', 6, 'docs/05-screens.md S8')
+export async function getHeatmap(weeks = 12): Promise<HeatmapCell[]> {
+  assertBrowser('getHeatmap')
+  const [sessions, settings] = await Promise.all([allSessions(), ensureSettings()])
+  return buildHeatmap(sessions, weeks, today(), settings.weekStartsOn)
+}
+
+export async function getMonthlyActivity(months = 6): Promise<MonthlyBar[]> {
+  assertBrowser('getMonthlyActivity')
+  return monthlyActivity(await allSessions(), months, today())
+}
+
+export async function getPersonalBests(range: Range = 'week'): Promise<PersonalBests> {
+  assertBrowser('getPersonalBests')
+  const [sessions, settings] = await Promise.all([allSessions(), ensureSettings()])
+  const streaks = computeStreaks(countingDaysOf(sessions))
+  return buildPersonalBests(sessions, range, streaks, today(), settings.weekStartsOn)
+}
+
+export async function getSessionsOnDay(date: LocalDate): Promise<Session[]> {
+  assertBrowser('getSessionsOnDay')
+  const rows = await db.sessions.where('localDate').equals(date).toArray()
+  return rows.filter(alive).sort((a, b) => a.startedAt.localeCompare(b.startedAt))
 }
 
 export async function getAchievements(): Promise<Achievement[]> {
@@ -547,8 +570,44 @@ export async function getAchievements(): Promise<Achievement[]> {
   return db.achievements.toArray()
 }
 
+/**
+ * Run after every completed session. Returns the keys unlocked *this* time,
+ * so the caller can announce them; anything already held stays quiet.
+ *
+ * Badges are never revoked. A streak you once held is a thing you did.
+ */
 export async function evaluateAchievements(): Promise<string[]> {
-  return notUntilPhase('evaluateAchievements', 6, 'docs/05-screens.md S7')
+  assertBrowser('evaluateAchievements')
+
+  const userId = await currentUserId()
+  const [sessions, settings, held, tasks] = await Promise.all([
+    allSessions(),
+    ensureSettings(),
+    db.achievements.toArray(),
+    db.tasks.where('status').equals('completed').toArray(),
+  ])
+
+  const fresh = newlyEarned(
+    {
+      sessions,
+      completedTasks: tasks.filter(alive).length,
+      weekStartsOn: settings.weekStartsOn,
+    },
+    held.map((a) => a.key),
+  )
+
+  if (fresh.length === 0) return []
+
+  const unlockedAt = nowIso()
+  await db.transaction('rw', [db.achievements, db.outbox], async () => {
+    for (const key of fresh) {
+      const row: Achievement = { key, userId, unlockedAt }
+      await db.achievements.put(row)
+      await enqueue('achievements', key, 'upsert', row)
+    }
+  })
+
+  return fresh
 }
 
 /* ======================================================== settings */
@@ -818,7 +877,9 @@ export const repo = {
   getWeekDots,
   getDayStats,
   getHeatmap,
+  getMonthlyActivity,
   getPersonalBests,
+  getSessionsOnDay,
   getAchievements,
   evaluateAchievements,
   getSettings,

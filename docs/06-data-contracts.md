@@ -242,14 +242,9 @@ export interface Repo {
 
 Read paths in components use `useLiveQuery` against Dexie directly *through repo-provided query builders* — the async methods above are for mutations and computed reads. Keep the split explicit so live-updating lists don't get stuck behind promises. The builders live on `repo.live`.
 
-**Phased implementation.** The interface is complete from Phase 1 so the contract never moves, but four methods belong to later phases and throw a named error until then rather than returning something plausible and wrong:
+**Phased implementation.** The interface was complete from Phase 1 so the contract never moved. Methods belonging to later phases threw an error naming their phase rather than returning something plausible and wrong; all of them are now implemented (`autoPlan` and `undoAutoPlan` in Phase 5, `getHeatmap`, `getPersonalBests` and `evaluateAchievements` in Phase 6).
 
-| Method | Lands in |
-|--------|----------|
-| `autoPlan`, `undoAutoPlan` | Phase 5 |
-| `getHeatmap`, `getPersonalBests`, `evaluateAchievements` | Phase 6 |
-
-`getStreaks`, `getWeekDots`, and `getDayStats` are implemented in Phase 1 because the Focus Timer's streak card (Phase 3) needs them before the reports screen exists.
+`getStreaks`, `getWeekDots`, and `getDayStats` landed early, in Phase 1, because the Focus Timer's streak card (Phase 3) needed them before the reports screen existed.
 
 ## 4. Stats shapes
 

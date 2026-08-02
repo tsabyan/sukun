@@ -309,7 +309,7 @@ Bottom sheet, snap points `['60%', '95%']`. Same component for create and edit; 
 ```
 
 - **Achievements card** — circular progress ring, "8 of 22 unlocked", opens a full grid. Locked badges show name + requirement in `--text-tertiary`; nothing is hidden, because a mystery badge you can't work toward is noise.
-- **Heatmap** — 12 weeks × 7 days, column per week, five intensity steps of `--accent`. Weekly/Monthly toggle changes the range. Tapping a cell opens a day sheet with that day's sessions and total.
+- **Heatmap** — 12 weeks × 7 days, column per week, five intensity steps of `--accent`. The range toggle reads **12 weeks / 6 months** rather than Weekly/Monthly — the control changes how much history is shown, and "Weekly" does not say that. Tapping a cell opens a day sheet with that day's sessions and total. Row labels follow the configured week start, so a Sunday-start user doesn't read Monday against their Sunday column.
 - **Monthly bar chart** — 6 months of session counts, hand-rolled SVG, bars in `--accent` at 85% with the current month at 100%.
 - All figures computed locally in `lib/stats/aggregate.ts`. Aggregation over a year of data runs in under 20ms — no worker needed, but keep it out of render (`useMemo` keyed on the session count).
 - **Empty state** — heatmap renders the empty grid with "Your first session will show up here." Never hide the chart; the shape of the thing is the motivation.

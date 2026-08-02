@@ -377,11 +377,51 @@ describe('local dates', () => {
   })
 })
 
-describe('phase guards', () => {
-  it('names the phase instead of failing quietly', async () => {
-    await expect(repo.getHeatmap()).rejects.toThrow(/Phase 6/)
-    await expect(repo.getPersonalBests()).rejects.toThrow(/Phase 6/)
-    await expect(repo.evaluateAchievements()).rejects.toThrow(/Phase 6/)
+describe('stats through the repo', () => {
+  it('builds a heatmap from recorded sessions', async () => {
+    await repo.recordSession({
+      taskId: null,
+      mode: 'focus',
+      plannedDurationSec: 1500,
+      actualDurationSec: 1500,
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      localDate: today(),
+      completed: true,
+      interrupted: false,
+    })
+
+    const grid = await repo.getHeatmap(12)
+    expect(grid).toHaveLength(84)
+    expect(grid.find((cell) => cell.date === today())!.sessions).toBe(1)
+  })
+
+  it('unlocks an achievement once and stays quiet after', async () => {
+    await repo.recordSession({
+      taskId: null,
+      mode: 'focus',
+      plannedDurationSec: 1500,
+      actualDurationSec: 1500,
+      startedAt: new Date().toISOString(),
+      endedAt: new Date().toISOString(),
+      localDate: today(),
+      completed: true,
+      interrupted: false,
+    })
+
+    const first = await repo.evaluateAchievements()
+    expect(first).toContain('first-session')
+
+    const second = await repo.evaluateAchievements()
+    expect(second).toEqual([])
+
+    expect(await repo.getAchievements()).toHaveLength(first.length)
+  })
+
+  it('returns empty personal bests for a new user', async () => {
+    const bests = await repo.getPersonalBests('week')
+    expect(bests.bestWeek).toBeNull()
+    expect(bests.rankings).toEqual([])
   })
 })
 
