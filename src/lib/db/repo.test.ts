@@ -379,9 +379,63 @@ describe('local dates', () => {
 
 describe('phase guards', () => {
   it('names the phase instead of failing quietly', async () => {
-    await expect(repo.autoPlan()).rejects.toThrow(/Phase 5/)
     await expect(repo.getHeatmap()).rejects.toThrow(/Phase 6/)
     await expect(repo.getPersonalBests()).rejects.toThrow(/Phase 6/)
     await expect(repo.evaluateAchievements()).rejects.toThrow(/Phase 6/)
+  })
+})
+
+describe('auto-plan through the repo', () => {
+  it('writes placements and reports the overflow', async () => {
+    for (let i = 0; i < 12; i++) {
+      await repo.createTask({ title: `t${i}`, priority: 'low' })
+    }
+
+    const result = await repo.autoPlan(today())
+    expect(result.placed).toBe(10)
+    expect(result.overflow).toBe(2)
+
+    const planned = await repo.listPlanned(today())
+    expect(planned).toHaveLength(10)
+    expect(planned.every((t) => t.plannedBlock !== null)).toBe(true)
+  })
+
+  it('leaves a hand-placed task exactly where it was put', async () => {
+    const pinned = await repo.createTask({ title: 'pinned', priority: 'low' })
+    await repo.setPlacement(pinned.id, 'morning', 0, true, today())
+    await repo.createTask({ title: 'auto', priority: 'high' })
+
+    await repo.autoPlan(today())
+
+    const after = await repo.getTask(pinned.id)
+    expect(after!.plannedBlock).toBe('morning')
+    expect(after!.plannedManually).toBe(true)
+  })
+
+  it('restores the previous plan on undo', async () => {
+    const task = await repo.createTask({ title: 'movable', priority: 'high' })
+    expect((await repo.getTask(task.id))!.plannedDate).toBeNull()
+
+    await repo.autoPlan(today())
+    expect((await repo.getTask(task.id))!.plannedBlock).toBe('morning')
+
+    await repo.undoAutoPlan()
+    const restored = await repo.getTask(task.id)
+    expect(restored!.plannedDate).toBeNull()
+    expect(restored!.plannedBlock).toBeNull()
+  })
+
+  it('does nothing on undo when nothing has been planned', async () => {
+    await expect(repo.undoAutoPlan()).resolves.toBeUndefined()
+  })
+
+  it('ignores tasks planned for another day', async () => {
+    const other = await repo.createTask({ title: 'tomorrow', priority: 'high' })
+    await repo.setPlacement(other.id, 'morning', 0, true, addDays(today(), 1))
+
+    await repo.autoPlan(today())
+
+    const after = await repo.getTask(other.id)
+    expect(after!.plannedDate).toBe(addDays(today(), 1))
   })
 })

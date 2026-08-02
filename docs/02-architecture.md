@@ -14,6 +14,7 @@
 | Charts | Hand-rolled SVG | Heatmap and bar chart are ~80 lines each. A chart library is 40KB for nothing. |
 | Icons | **Lucide React** | Clean, consistent, tree-shakeable. |
 | Class names | **clsx** + **tailwind-merge** (`cn()` in `lib/utils/cn.ts`) | Conditional classes with conflict resolution, so a `className` prop can override a component default instead of fighting it. 2KB combined. |
+| Drag and drop | **@dnd-kit** (core, sortable, utilities) — planner only | Cross-container dragging with a keyboard sensor. Short single-axis lists (subtasks) use Motion's `Reorder` instead; dnd-kit earns its weight only where a row moves *between* containers. |
 | Dates | **date-fns** v4 | Tree-shakeable, timezone-aware via `@date-fns/tz`. |
 | Testing | **Vitest** + Testing Library, **fake-indexeddb** for repo tests; **Playwright** for the timer E2E | The timer is the one thing that must be tested properly. `fake-indexeddb` lets the whole data layer run under Node, so repo behaviour is asserted rather than clicked through. |
 

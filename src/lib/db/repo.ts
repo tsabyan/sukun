@@ -5,6 +5,7 @@ import { enqueue } from '@/lib/sync/outbox'
 import { newId } from '@/lib/utils/ids'
 import { nowIso, today } from '@/lib/utils/dates'
 import { computeStreaks, weekDots, type Streaks } from '@/lib/stats/streaks'
+import { planDay } from '@/lib/planner/autoplan'
 import type {
   Achievement,
   CreateTaskInput,
@@ -202,12 +203,122 @@ export async function setPlacement(
   })
 }
 
-export async function autoPlan(): Promise<{ placed: number; overflow: number }> {
-  return notUntilPhase('autoPlan', 5, 'docs/05-screens.md S2')
+/** What Auto-plan replaced, so a single press is always reversible. */
+interface PlanSnapshot {
+  date: LocalDate
+  rows: Array<{
+    id: string
+    plannedDate: LocalDate | null
+    plannedBlock: Task['plannedBlock']
+    plannedOrder: number
+    plannedManually: boolean
+  }>
+}
+
+/**
+ * Candidates are every open task that could belong to this day: the ones
+ * already on it, plus everything unplanned. A task planned for a *different*
+ * day is left alone — Auto-plan shapes one day, it does not raid the week.
+ */
+async function planCandidates(date: LocalDate): Promise<Task[]> {
+  const active = await db.tasks.where('status').equals('active').toArray()
+  return active.filter(
+    (task) => alive(task) && (task.plannedDate === date || task.plannedDate === null),
+  )
+}
+
+export async function autoPlan(
+  date: LocalDate = today(),
+): Promise<{ placed: number; overflow: number }> {
+  assertBrowser('autoPlan')
+
+  const candidates = await planCandidates(date)
+  const result = planDay(
+    candidates.map((task) => ({
+      id: task.id,
+      priority: task.priority,
+      estimatedPomodoros: task.estimatedPomodoros,
+      createdAt: task.createdAt,
+      plannedBlock: task.plannedBlock,
+      plannedOrder: task.plannedOrder,
+      plannedManually: task.plannedManually,
+    })),
+  )
+
+  const placements = new Map(result.placements.map((p) => [p.id, p]))
+  const now = nowIso()
+
+  const snapshot: PlanSnapshot = {
+    date,
+    rows: candidates.map((task) => ({
+      id: task.id,
+      plannedDate: task.plannedDate,
+      plannedBlock: task.plannedBlock,
+      plannedOrder: task.plannedOrder,
+      plannedManually: task.plannedManually,
+    })),
+  }
+
+  await db.transaction('rw', [db.tasks, db.meta, db.outbox], async () => {
+    await db.meta.put({ key: META_KEYS.lastAutoPlan, value: snapshot })
+
+    for (const task of candidates) {
+      const placement = placements.get(task.id)
+
+      const next: Task = placement
+        ? {
+            ...task,
+            plannedDate: date,
+            plannedBlock: placement.block,
+            plannedOrder: placement.order,
+            updatedAt: now,
+          }
+        : // Overflow: cleared off the day rather than left in a stale slot.
+          { ...task, plannedDate: null, plannedBlock: null, plannedOrder: 0, updatedAt: now }
+
+      if (
+        next.plannedDate === task.plannedDate &&
+        next.plannedBlock === task.plannedBlock &&
+        next.plannedOrder === task.plannedOrder
+      ) {
+        continue
+      }
+
+      await db.tasks.put(next)
+      await enqueue('tasks', next.id, 'upsert', next)
+    }
+  })
+
+  return { placed: result.placed, overflow: result.overflow.length }
 }
 
 export async function undoAutoPlan(): Promise<void> {
-  return notUntilPhase('undoAutoPlan', 5, 'docs/05-screens.md S2')
+  assertBrowser('undoAutoPlan')
+
+  const snapshot = await getMeta<PlanSnapshot>(META_KEYS.lastAutoPlan)
+  if (!snapshot) return
+
+  const now = nowIso()
+
+  await db.transaction('rw', [db.tasks, db.meta, db.outbox], async () => {
+    for (const row of snapshot.rows) {
+      const task = await db.tasks.get(row.id)
+      if (!task) continue
+
+      const next: Task = {
+        ...task,
+        plannedDate: row.plannedDate,
+        plannedBlock: row.plannedBlock,
+        plannedOrder: row.plannedOrder,
+        plannedManually: row.plannedManually,
+        updatedAt: now,
+      }
+      await db.tasks.put(next)
+      await enqueue('tasks', next.id, 'upsert', next)
+    }
+
+    await db.meta.delete(META_KEYS.lastAutoPlan)
+  })
 }
 
 /* ======================================================== subtasks */

@@ -9,6 +9,8 @@ interface CardProps extends Omit<HTMLMotionProps<'div'>, 'children'> {
   interactive?: boolean
   padding?: 'compact' | 'default' | 'none'
   children?: React.ReactNode
+  /** React 19 takes ref as an ordinary prop — drop targets need it */
+  ref?: React.Ref<HTMLDivElement>
 }
 
 const PADDING = {

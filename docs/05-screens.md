@@ -117,9 +117,15 @@ sort:    priority desc, then estimated_pomodoros desc, then created_at asc
 place:   high priority → morning first, then afternoon
          medium        → afternoon, then morning, then evening
          low           → evening, then any block with room
-overflow: tasks that don't fit stay unplanned; show
-          "3 tasks didn't fit today" with a link to /tasks
+overflow: tasks that don't fit stay unplanned; the result toast
+          reads "7 planned · 3 didn't fit"
 ```
+
+Three refinements the implementation settled:
+
+- **High priority falls back to the evening.** The list above stops at the afternoon, but leaving a high-priority task unplanned while a block still has room is plainly wrong. Overflow should mean "the day is full", not "the day is full in the two places I looked". Every priority now has all three blocks in its preference order; only the order differs.
+- **An estimate of zero costs one slot,** and a task larger than any single block may take a whole empty one. Otherwise a 6-pomodoro task would overflow forever, and zero-estimate tasks would stuff a block without limit.
+- **Dragging a task pins it.** A manual move sets `plannedManually`, which is what makes Auto-plan safe to press again — it fills around anything you placed yourself, and the pinned task's estimate still consumes its block's capacity.
 
 **Auto-plan never moves a task the user placed by hand.** Manual placement sets `planned_manually = true` locally; Auto-plan only fills around those. This is the answer to the open question in the reference post — respecting manual overrides is what makes the button safe to press twice.
 
