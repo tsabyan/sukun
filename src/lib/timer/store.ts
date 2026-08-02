@@ -16,7 +16,7 @@ import { evaluateAchievements, getSettings, getTask, recordSession } from '@/lib
 import { achievementByKey, DEFAULT_SETTINGS } from '@/lib/db/seed'
 import { toast } from '@/components/ui/Toast'
 import { toLocalDate } from '@/lib/utils/dates'
-import { haptic } from '@/lib/utils/haptics'
+import { haptic, setHapticsEnabled } from '@/lib/utils/haptics'
 import type { Settings } from '@/lib/db/types'
 
 /**
@@ -48,6 +48,8 @@ interface TimerState {
   durations: Durations
   soundId: string
   volume: number
+  /** transient: silences the chime for this sitting without editing settings */
+  muted: boolean
   hydrated: boolean
   /** shown under the countdown; kept here so the ring needs no extra query */
   attachedTaskTitle: string | null
@@ -61,6 +63,7 @@ interface TimerState {
   reset: () => void
   skip: () => void
   attachTask: (taskId: string | null, title?: string | null) => void
+  toggleMuted: () => void
   tick: () => void
 }
 
@@ -192,8 +195,8 @@ export const useTimerStore = create<TimerState>((set, get) => {
       saveSession(result.session)
 
       if (options.alert && result.session.completed) {
-        const { soundId, volume, attachedTaskTitle } = get()
-        playAlert(soundId, volume)
+        const { soundId, volume, muted, attachedTaskTitle } = get()
+        if (!muted) playAlert(soundId, volume)
         haptic('phaseComplete')
         notifyPhaseEnd(result.session.mode, attachedTaskTitle)
       }
@@ -206,6 +209,7 @@ export const useTimerStore = create<TimerState>((set, get) => {
     durations: FALLBACK_DURATIONS,
     soundId: DEFAULT_SETTINGS.soundId,
     volume: DEFAULT_SETTINGS.volume,
+    muted: false,
     hydrated: false,
     attachedTaskTitle: null,
 
@@ -214,6 +218,7 @@ export const useTimerStore = create<TimerState>((set, get) => {
 
       const settings = await getSettings()
       const durations = durationsFrom(settings)
+      setHapticsEnabled(settings.hapticsEnabled)
       const stored = await getMeta<TimerRuntime>(META_KEYS.timerRuntime)
 
       const runtime = stored ?? initialRuntime(durations)
@@ -248,6 +253,7 @@ export const useTimerStore = create<TimerState>((set, get) => {
 
     async refreshSettings() {
       const settings = await getSettings()
+      setHapticsEnabled(settings.hapticsEnabled)
       set({
         durations: durationsFrom(settings),
         soundId: settings.soundId,
@@ -292,6 +298,10 @@ export const useTimerStore = create<TimerState>((set, get) => {
     attachTask(taskId, title = null) {
       dispatch({ type: 'ATTACH_TASK', taskId })
       set({ attachedTaskTitle: taskId ? title : null })
+    },
+
+    toggleMuted() {
+      set({ muted: !get().muted })
     },
 
     tick() {

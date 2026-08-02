@@ -260,6 +260,23 @@ describe('free tier', () => {
 })
 
 describe('settings', () => {
+  it('backfills a field added after the row was written', async () => {
+    const settings = await repo.getSettings()
+
+    // simulate a row stored before hapticsEnabled existed
+    const legacy = { ...settings } as Record<string, unknown>
+    delete legacy.hapticsEnabled
+    await db.settings.put(legacy as never)
+
+    const read = await repo.getSettings()
+    expect(read.hapticsEnabled).toBe(true)
+    expect(read.focusMinutes).toBe(settings.focusMinutes)
+
+    // and the backfill is persisted, not recomputed on every read
+    const stored = await db.settings.get(settings.userId)
+    expect(stored!.hapticsEnabled).toBe(true)
+  })
+
   it('creates defaults on first read and patches in place', async () => {
     const settings = await repo.getSettings()
     expect(settings.focusMinutes).toBe(25)

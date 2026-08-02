@@ -123,6 +123,7 @@ export interface Settings {
   /** 0–1 */
   volume: number
   notificationsEnabled: boolean
+  hapticsEnabled: boolean
   theme: 'system' | 'light' | 'dark'
   defaultTimerMode: 'ring' | 'flip'
   /** 0 = Sunday … 6 = Saturday */

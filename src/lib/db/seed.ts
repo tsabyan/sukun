@@ -15,18 +15,32 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'userId' | 'createdAt' | 'updatedA
   soundId: 'chime',
   volume: 0.6,
   notificationsEnabled: false,
+  hapticsEnabled: true,
   theme: 'system',
   defaultTimerMode: 'ring',
   weekStartsOn: 1,
 }
 
-/** Creates the settings row on first run. Safe to call repeatedly. */
+/**
+ * Creates the settings row on first run. Safe to call repeatedly.
+ *
+ * Defaults are merged over whatever is stored, so a field added in a later
+ * release reads sensibly on a row written before it existed. IndexedDB has no
+ * column migration to hang that off.
+ */
 export async function ensureSettings(): Promise<Settings> {
   const userId = await currentUserId()
-  const existing = await db.settings.get(userId)
-  if (existing) return existing
-
   const now = nowIso()
+  const existing = await db.settings.get(userId)
+
+  if (existing) {
+    const filled: Settings = { ...DEFAULT_SETTINGS, ...existing, userId }
+    const stored = existing as unknown as Record<string, unknown>
+    const missing = Object.keys(DEFAULT_SETTINGS).some((key) => stored[key] === undefined)
+    if (missing) await db.settings.put(filled)
+    return filled
+  }
+
   const settings: Settings = { ...DEFAULT_SETTINGS, userId, createdAt: now, updatedAt: now }
   await db.settings.put(settings)
   return settings

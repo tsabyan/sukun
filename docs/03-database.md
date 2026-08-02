@@ -61,6 +61,7 @@ create table settings (
   sound_id                 text    not null default 'chime',
   volume                   real    not null default 0.6 check (volume between 0 and 1),
   notifications_enabled    boolean not null default false,
+  haptics_enabled          boolean not null default true,
   theme                    text    not null default 'system' check (theme in ('system','light','dark')),
   default_timer_mode       text    not null default 'ring'   check (default_timer_mode in ('ring','flip')),
   week_starts_on           int     not null default 1 check (week_starts_on between 0 and 6),
@@ -320,3 +321,5 @@ Two properties of IndexedDB shape this, and both differ from the Postgres side:
 - **`deletedAt` is not indexed.** IndexedDB cannot index `null`, so a row with `deletedAt: null` is simply absent from that index, which makes "where deletedAt is null" impossible to express as a range query. Live rows are the overwhelming majority, so the repo filters them in JS instead.
 
 `meta` holds the live timer runtime (§3 of [02-architecture.md](02-architecture.md)) so a reload mid-session restores the countdown exactly. It never syncs — a running timer is device-local.
+
+**Adding a settings field later.** IndexedDB stores objects, not columns, so a row written before a field existed simply lacks it — and `undefined` reaching a toggle renders an uncontrolled input. `ensureSettings()` therefore merges `DEFAULT_SETTINGS` under whatever is stored and writes the filled row back once. Add the Postgres column with a `not null default` to match, and nothing else is needed.
