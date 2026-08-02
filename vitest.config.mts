@@ -10,6 +10,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     setupFiles: ['./vitest.setup.ts'],
-    include: ['src/**/*.test.ts'],
+    include: ["src/**/*.test.ts"],
+    exclude: ["e2e/**"],
   },
 })

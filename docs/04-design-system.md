@@ -115,7 +115,10 @@ One accent per timer phase. The accent is the *only* saturated color on screen a
 --accent:        /* set per phase, swapped on the root */
 --accent-muted:  color-mix(in oklch, var(--accent) 18%, transparent);
 --accent-quiet:  color-mix(in oklch, var(--accent) 9%,  transparent);
+--on-accent:     #0B0E12; /* text and icons ON an accent fill, both themes */
 ```
+
+**`--on-accent` is fixed dark in both themes, and does not follow `--canvas`.** Near-white on light-mode sea-glass measures **2.73:1** — a real contrast failure on every primary button, caught by Lighthouse. The fixed ink gives 6.3:1 in light and 9.8:1 in dark. Anything sitting on an accent fill uses it.
 
 Swapping `--accent` on `<html>` when the phase changes re-tints the ring, the play button, the active tab, and focus outlines in one shot. Transition it over 480ms so the phase change reads as a mood shift, not a repaint.
 

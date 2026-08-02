@@ -68,7 +68,7 @@ function TabBarItem({ item, active }: { item: NavItem; active: boolean }) {
         className={cn(
           'flex h-full flex-col items-center justify-center gap-1',
           'transition-colors duration-150',
-          active ? 'text-accent' : 'text-ink-3 hover:text-ink-2',
+          active ? 'text-accent' : 'text-ink-2 hover:text-ink',
         )}
       >
         <Icon size={24} strokeWidth={1.75} aria-hidden />

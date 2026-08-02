@@ -45,7 +45,7 @@ export function PlannerRow({ task, onToggle, overlay }: PlannerRowProps) {
         className={cn(
           'inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] border transition-colors',
           done
-            ? 'border-accent bg-accent text-canvas'
+            ? 'border-accent bg-accent text-on-accent'
             : 'border-hairline-strong text-transparent hover:border-accent',
         )}
       >

@@ -1,7 +1,8 @@
 'use client'
 
-import { useRef, useState } from 'react'
+import { Suspense, useRef, useState } from 'react'
 import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { ArrowDownUp, Plus, Settings, Sparkles } from 'lucide-react'
@@ -39,7 +40,32 @@ const SORTS: Array<{ key: SortKey; label: string }> = [
 const VIRTUALIZE_ABOVE = 100
 const ROW_HEIGHT = 84
 
+/**
+ * useSearchParams opts a route out of static prerendering unless it sits
+ * inside a Suspense boundary, so the screen is split from the route.
+ */
 export default function TasksPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex flex-col gap-2 pt-4">
+          {[0, 1, 2].map((i) => (
+            <Card key={i} className="h-[76px] animate-pulse" />
+          ))}
+        </div>
+      }
+    >
+      <TasksScreen />
+    </Suspense>
+  )
+}
+
+function TasksScreen() {
+  // The N shortcut routes here with ?new=1 rather than reaching into this
+  // page's state from a global handler.
+  const searchParams = useSearchParams()
+  const wantsNew = searchParams.get('new') === '1'
+
   const [status, setStatus] = useState<TaskStatus>('active')
   const [sort, setSort] = useState<SortKey>('recent')
   const [tagIds, setTagIds] = useState<string[]>([])
@@ -61,6 +87,14 @@ export default function TasksPage() {
 
   const atLimit = activeCount >= FREE_TASK_LIMIT
   const showMeter = activeCount >= FREE_TASK_WARN_AT
+
+  // Consume the query flag during render; an effect would flash the list first.
+  const [handledNew, setHandledNew] = useState(false)
+  if (wantsNew && !handledNew) {
+    setHandledNew(true)
+    if (activeCount >= FREE_TASK_LIMIT) setUpsellOpen(true)
+    else setFormOpen(true)
+  }
 
   const openCreate = () => {
     // The wall, not a nag: the add button itself becomes the upsell.

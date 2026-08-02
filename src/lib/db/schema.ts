@@ -81,6 +81,8 @@ export const META_KEYS = {
   seededAt: 'seededAt',
   lastPulledAt: 'lastPulledAt',
   waitlistEmail: 'waitlistEmail',
+  onboardedAt: 'onboardedAt',
+  notificationsAskedAt: 'notificationsAskedAt',
 } as const
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {

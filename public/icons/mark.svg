@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32">
+  
+  <g transform="translate(3.5199999999999996 3.5199999999999996) scale(1.04)">
+    <circle cx="12" cy="12" r="9"
+      fill="none" stroke="#63C9B6" stroke-width="2"
+      stroke-linecap="round"
+      stroke-dasharray="50.26548245743669 6.283185307179586"
+      transform="rotate(-50 12 12)"/>
+  </g>
+</svg>

@@ -1,6 +1,6 @@
 'use client'
 
-import { useSyncStore } from '@/lib/sync/engine'
+import { useSyncStore } from '@/lib/sync/state'
 import { cn } from '@/lib/utils/cn'
 
 /**

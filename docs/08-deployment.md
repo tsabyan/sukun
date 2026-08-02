@@ -98,22 +98,20 @@ Connect the GitHub repo for automatic preview deploys on every branch. Productio
 
 The anon key is public by design — it's in the client bundle and RLS is what protects the data. **Never add the `service_role` key to Vercel.** This app has no server-side privileged path, so there is no reason for that key to exist outside your password manager.
 
-### `next.config.ts`
+### The service worker is a post-build step, not a plugin
 
-```ts
-import withSerwistInit from '@serwist/next'
+Serwist's classic `withSerwistInit` injects a **webpack** config, and Next 16 builds with Turbopack by default. The combination is a hard build error, and silencing it with an empty `turbopack: {}` is worse — the plugin then never runs and no worker is generated, silently.
 
-const withSerwist = withSerwistInit({
-  swSrc: 'src/app/sw.ts',
-  swDest: 'public/sw.js',
-  disable: process.env.NODE_ENV === 'development',
-})
+So `next.config.ts` carries no Serwist plugin at all, and the worker is built afterwards by `@serwist/cli` reading `serwist.config.mjs`:
 
-export default withSerwist({
-  reactStrictMode: true,
-  experimental: { optimizePackageImports: ['lucide-react', 'date-fns'] },
-})
+```jsonc
+// package.json
+"build": "next build && serwist build serwist.config.mjs"
 ```
+
+Two things that cost time if you hit them cold: the CLI takes its config as a **positional** argument (`serwist build path`, not `--config path`), and it needs **esbuild** installed separately.
+
+Configurator mode also does not inject a registration, so `components/pwa/ServiceWorker.tsx` registers `/sw.js` after `load`.
 
 ---
 
@@ -229,7 +227,8 @@ Track *events*, never task titles or notes. A productivity app that ships user c
 □ Anonymous sign-in enabled and tested in a fresh incognito window
 □ Magic link works from a phone, not just localhost
 □ Keep-alive cron returns 200 (Vercel + GitHub Action)
-□ Lighthouse mobile: Perf ≥ 90, A11y ≥ 95, PWA installable
+□ Lighthouse: A11y 100, Best Practices 100, SEO 100, PWA installable
+□ Lighthouse Performance — see the note below before treating this as a gate
 □ Installed to an iPhone Home Screen and an Android home screen
 □ Offline: airplane mode, full session, reconnect, data intact
 □ Backgrounded 25-minute session drifts < 1s
@@ -238,3 +237,21 @@ Track *events*, never task titles or notes. A productivity app that ships user c
 □ Privacy page exists and is honest about what's stored where
 □ Error boundary on every route — a white screen loses the user permanently
 ```
+
+### Lighthouse, honestly
+
+Measured against a production build on the reference machine:
+
+| | Perf | A11y | Best practices | SEO |
+|---|---|---|---|---|
+| **Desktop** | **95** | 100 | 100 | 100 |
+| **Mobile** | **57** | 100 | 100 | 100 |
+
+The roadmap asked for mobile Performance ≥ 90. **It is not met, and no amount of bundle trimming got close.** The diagnosis is worth writing down so nobody re-runs it:
+
+- FCP is 0.8s and CLS is 0.001 — the page arrives fast and doesn't move.
+- LCP is ~6s and TBT ~1.1s, both dominated by **2.7s of script evaluation** under Lighthouse's 4× CPU throttle. The payload is ordinary for a client app: react-dom 227KB, Motion 157KB, Dexie 96KB raw.
+- Deferring `SyncProvider` cut 275KB from the first-paint bundle and moved the score by ~2 points. Size is not the constraint; **hydration cost is**.
+- On a first visit the LCP element is the onboarding overlay, which only renders after hydration *and* an IndexedDB read. Lighthouse always tests a cold profile, so it always measures that worst case. Deferring the overlay made LCP *worse*, not better — it is now loaded eagerly with only its heavy task-form dependency lazily imported.
+
+Getting mobile above 90 means reducing hydration work, which means one of: dropping Motion for CSS animations (contradicts doc 02 §1), server-rendering real content (contradicts local-first — there is no server-side data), or shipping less of the app on first load. All are real options; none are free, and none should be done on a hunch. Re-measure with `--form-factor=mobile` before and after, and treat the desktop 95 as evidence the app itself is not slow.

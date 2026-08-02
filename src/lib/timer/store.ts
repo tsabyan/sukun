@@ -10,9 +10,15 @@ import {
   type TimerRuntime,
 } from './machine'
 import { playAlert, resumeAudioIfNeeded, unlockAudio } from './audio'
-import { notifyPhaseEnd } from './notifications'
-import { getMeta, META_KEYS, setMeta } from '@/lib/db/schema'
-import { evaluateAchievements, getSettings, getTask, recordSession } from '@/lib/db/repo'
+import { notificationState, notifyPhaseEnd, requestNotificationPermission } from './notifications'
+import { db, getMeta, META_KEYS, setMeta } from '@/lib/db/schema'
+import {
+  evaluateAchievements,
+  getSettings,
+  getTask,
+  recordSession,
+  updateSettings,
+} from '@/lib/db/repo'
 import { achievementByKey, DEFAULT_SETTINGS } from '@/lib/db/seed'
 import { toast } from '@/components/ui/Toast'
 import { toLocalDate } from '@/lib/utils/dates'
@@ -124,6 +130,36 @@ function persist(runtime: TimerRuntime) {
 }
 
 /**
+ * Ask for notifications after the first completed session, never on load.
+ *
+ * A cold permission prompt gets denied, and a denial is permanent — there is
+ * no second chance to ask. Asking once someone has actually finished a session
+ * means the request has an obvious answer to "why would I want this".
+ */
+async function maybeAskForNotifications() {
+  if (notificationState() !== 'default') return
+  if (await getMeta<string>(META_KEYS.notificationsAskedAt)) return
+
+  const completed = await db.sessions.where('mode').equals('focus').count()
+  if (completed !== 1) return
+
+  await setMeta(META_KEYS.notificationsAskedAt, new Date().toISOString())
+
+  toast('Want an alert when a session ends?', {
+    durationMs: 10_000,
+    action: {
+      label: 'Enable',
+      onPress: () => {
+        void requestNotificationPermission().then(async (result) => {
+          await updateSettings({ notificationsEnabled: result === 'granted' })
+          if (result === 'denied') toast('Notifications are blocked for this site')
+        })
+      },
+    },
+  })
+}
+
+/**
  * Unlocks are announced with one quiet toast each — no modal, no confetti.
  * Evaluated only after a completed focus session, since nothing else can move
  * the needle on any badge.
@@ -153,8 +189,10 @@ function saveSession(outcome: SessionOutcome) {
         interrupted: outcome.interrupted,
       }),
     )
-    .then(() => {
-      if (outcome.mode === 'focus' && outcome.completed) return announceAchievements()
+    .then(async () => {
+      if (outcome.mode !== 'focus' || !outcome.completed) return
+      await announceAchievements()
+      await maybeAskForNotifications()
     })
     .catch((error) => {
       console.error('[sukun] failed to record session', error)

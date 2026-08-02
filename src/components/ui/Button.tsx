@@ -9,7 +9,7 @@ export type ButtonSize = 'sm' | 'md'
 
 const VARIANTS: Record<ButtonVariant, string> = {
   // one per screen, at most
-  primary: 'bg-accent text-canvas hover:brightness-105',
+  primary: 'bg-accent text-on-accent hover:brightness-105',
   secondary:
     'bg-surface-raised text-ink border border-hairline hover:border-hairline-strong',
   ghost: 'bg-transparent text-ink-2 hover:bg-surface-raised hover:text-ink',

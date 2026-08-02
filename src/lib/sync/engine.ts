@@ -1,9 +1,9 @@
-import { create } from 'zustand'
 import { db, getMeta, META_KEYS, setMeta } from '@/lib/db/schema'
 import { adoptUserId, currentUserId } from '@/lib/db/identity'
 import { pending } from './outbox'
 import { CONFLICT_TARGET, PULL_TABLES, REMOTE_TABLE, fromRemote, toRemote } from './mappers'
 import { getSupabase, isSupabaseConfigured } from '@/lib/supabase/client'
+import { useSyncStore } from './state'
 import type { OutboxEntry, SyncTable } from '@/lib/db/types'
 
 /**
@@ -18,22 +18,6 @@ const PULL_INTERVAL_MS = 5 * 60_000
 const MAX_ATTEMPTS = 10
 const BACKOFF_CAP_MS = 5 * 60_000
 const PUSH_BATCH = 200
-
-export type SyncState = 'idle' | 'syncing' | 'offline' | 'stalled' | 'disabled'
-
-interface SyncStore {
-  state: SyncState
-  lastSyncedAt: number | null
-  pendingCount: number
-  set: (patch: Partial<Omit<SyncStore, 'set'>>) => void
-}
-
-export const useSyncStore = create<SyncStore>((set) => ({
-  state: isSupabaseConfigured() ? 'idle' : 'disabled',
-  lastSyncedAt: null,
-  pendingCount: 0,
-  set: (patch) => set(patch),
-}))
 
 /** 1s, 2s, 4s … capped at five minutes. */
 function backoffFor(attempts: number): number {
@@ -310,7 +294,10 @@ export async function syncNow(): Promise<void> {
 
 /** Sign-in, reconnect, and every five minutes while the tab is visible. */
 export function startSync(): () => void {
-  if (!isSupabaseConfigured() || typeof window === 'undefined') return () => {}
+  if (!isSupabaseConfigured() || typeof window === 'undefined') {
+    useSyncStore.getState().set({ state: 'disabled' })
+    return () => {}
+  }
 
   const tick = () => {
     if (document.visibilityState === 'visible') void syncNow()
@@ -340,3 +327,6 @@ export function startSync(): () => void {
     listener?.subscription.unsubscribe()
   }
 }
+
+export { useSyncStore } from './state'
+export type { SyncState } from './state'

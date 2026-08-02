@@ -73,6 +73,15 @@
 
   /* — default phase */
   --accent: var(--accent-focus);
+
+  /**
+   * Text and icons sitting ON an accent fill.
+   *
+   * Fixed dark in both themes rather than following --canvas. In light mode
+   * near-white on sea-glass measures 2.73:1 — a real failure on every primary
+   * button — while this ink gives 6.3:1 there and 9.8:1 in the dark theme.
+   */
+  --on-accent: #0b0e12;
 }
 
 [data-theme="dark"] {
@@ -125,6 +134,7 @@
   --color-hairline-strong: var(--hairline-strong);
 
   --color-accent: var(--accent);
+  --color-on-accent: var(--on-accent);
   --color-ember: var(--accent-ember);
 
   --color-ink: var(--text-primary);

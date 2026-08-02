@@ -16,7 +16,8 @@
 | Class names | **clsx** + **tailwind-merge** (`cn()` in `lib/utils/cn.ts`) | Conditional classes with conflict resolution, so a `className` prop can override a component default instead of fighting it. 2KB combined. |
 | Drag and drop | **@dnd-kit** (core, sortable, utilities) — planner only | Cross-container dragging with a keyboard sensor. Short single-axis lists (subtasks) use Motion's `Reorder` instead; dnd-kit earns its weight only where a row moves *between* containers. |
 | Dates | **date-fns** v4 | Tree-shakeable, timezone-aware via `@date-fns/tz`. |
-| Testing | **Vitest** + Testing Library, **fake-indexeddb** for repo tests; **Playwright** for the timer E2E | The timer is the one thing that must be tested properly. `fake-indexeddb` lets the whole data layer run under Node, so repo behaviour is asserted rather than clicked through. |
+| Testing | **Vitest** + **fake-indexeddb** for repo tests; **Playwright** for the timer E2E | The timer is the one thing that must be tested properly. `fake-indexeddb` lets the whole data layer run under Node, so repo behaviour is asserted rather than clicked through; Playwright covers what only a browser can prove — a real Worker, a real backgrounded tab. |
+| Icons | **sharp** (dev only, via `npm run icons`) | Renders the PWA icons from the logomark's own geometry, so a binary in the repo cannot drift from the component. Already present as a Next dependency. |
 
 **Deliberately not used:** any ORM (Supabase JS client is enough), Redux, a component library (the design is too specific to fight defaults), a charting library, `next-pwa` (unmaintained).
 

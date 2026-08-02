@@ -50,7 +50,7 @@ export function TodayTasks() {
           </p>
           <Link
             href="/tasks"
-            className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-4 text-label font-medium text-canvas"
+            className="inline-flex h-11 items-center gap-2 rounded-md bg-accent px-4 text-label font-medium text-on-accent"
           >
             <Plus size={18} strokeWidth={1.75} />
             Add a task

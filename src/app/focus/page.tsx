@@ -230,7 +230,7 @@ function RailButton({
       className={cn(
         'inline-flex items-center justify-center rounded-full transition-colors',
         primary
-          ? 'size-14 bg-accent text-canvas'
+          ? 'size-14 bg-accent text-on-accent'
           : 'size-11 text-ink-3 hover:bg-surface hover:text-ink',
       )}
     >
