@@ -6,6 +6,7 @@ import { ThemeProvider } from '@/lib/theme/use-theme'
 import { AppShell } from '@/components/shell/AppShell'
 import { DaylightLayer } from '@/components/shell/DaylightLayer'
 import { DevBridge } from '@/components/dev/DevBridge'
+import { TimerEngine } from '@/components/timer/TimerEngine'
 
 // Instrument voice — timer digits, headings, condensed data labels.
 const archivo = Archivo({
@@ -62,6 +63,7 @@ export default function RootLayout({
         <ThemeProvider>
           <DaylightLayer />
           <AppShell>{children}</AppShell>
+          <TimerEngine />
           <DevBridge />
         </ThemeProvider>
       </body>

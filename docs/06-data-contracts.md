@@ -124,6 +124,7 @@ export interface TimerRuntime {
   startedAt: number | null     // epoch ms
   endsAt: number | null        // epoch ms
   pausedAt: number | null
+  plannedDurationSec: number   // the duration THIS phase started with
   taskId: string | null
   cycleCount: number           // completed focus sessions in the current cycle
 }
@@ -146,13 +147,18 @@ export interface Durations {
 export function reduce(
   state: TimerRuntime,
   event: TimerEvent,
-): { state: TimerRuntime; session?: SessionDraft }
+): { state: TimerRuntime; session?: SessionOutcome }
 
 export function remainingMs(state: TimerRuntime, now: number): number
-export function nextPhase(state: TimerRuntime, d: Durations): SessionMode
+export function elapsedMs(state: TimerRuntime, now: number): number
+export function nextPhase(phase: SessionMode, cycleCount: number, d: Durations): SessionMode
 ```
 
-`reduce` returns an optional `SessionDraft` whenever a phase ends — the caller persists it. The machine never writes anything itself.
+`reduce` returns an optional `SessionOutcome` whenever a phase ends — the caller persists it. The machine never writes anything itself.
+
+**`SessionOutcome`, not `SessionDraft`.** The outcome carries epoch milliseconds (`startedAtMs`, `endedAtMs`) rather than ISO strings and a `localDate`. Converting to the storage shape needs a date library and a timezone opinion, and keeping both out of the reducer is what makes it trivially testable. The store does the conversion in one place.
+
+**Why `plannedDurationSec` is on the runtime.** Pause time is derived as `(endsAt - startedAt) - plannedDuration`. Reading the duration from current settings instead would corrupt that arithmetic the moment a user edits their focus length mid-session — the session would report the wrong elapsed time. It also gives the idle state something correct to display.
 
 **Invariants the tests must assert**
 

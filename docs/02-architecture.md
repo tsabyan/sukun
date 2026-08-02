@@ -96,6 +96,8 @@ The worker cannot fire a notification once it notices `endsAt` has passed *if th
 
 For (3), record the session with `ended_at = endsAt`, not the wake-up time. A session must never report more elapsed time than it actually ran.
 
+**Catch-up guard.** Complete at most one phase per return. With auto-start on, a user who closes the tab during a focus session and reopens it three hours later would otherwise have the machine chain through a dozen phases and manufacture a full afternoon of focus sessions they never sat through. So: the expired phase completes and is recorded honestly; if auto-start then hands over a phase whose clock has *also* already run out, that one drops straight to idle without being recorded. The user wasn't there for it.
+
 ### Audio on iOS
 
 `AudioContext` starts `suspended` until a user gesture. Call `ctx.resume()` inside the Start button's click handler and keep a decoded buffer warm. Play a silent 1-sample buffer at that moment so iOS marks the context as user-activated for the rest of the session.
