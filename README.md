@@ -24,7 +24,7 @@ Also: [CLAUDE.md](CLAUDE.md) — repo rules the coding agent reads every session
 
 ## TL;DR of the plan
 
-- **Stack:** Next.js 15 (App Router) + TypeScript + Tailwind v4 + Motion + Dexie (IndexedDB) + Supabase (Postgres/Auth) + Serwist (PWA).
+- **Stack:** Next.js 16 (App Router) + TypeScript + Tailwind v4 + Motion + Dexie (IndexedDB) + Supabase (Postgres/Auth) + Serwist (PWA).
 - **Local-first:** IndexedDB is the source of truth. Supabase is the sync target. App works fully offline; sign-in is optional.
 - **Design:** Calm premium iOS. Warm neutrals, one sage accent, soft depth, spring motion. *Not* the neon-red/black of the reference.
 - **Cost:** $0 until you have real users. See [08-deployment.md](docs/08-deployment.md) for the two free-tier traps.

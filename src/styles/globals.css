@@ -1,0 +1,309 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   Sukun design tokens — docs/04-design-system.md
+   Every color, radius, shadow, and duration in the app comes from this file.
+   ========================================================================== */
+
+/* Registered so the phase accent can animate. Without @property a custom
+   property snaps between values instead of cross-fading. */
+@property --accent {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #3fa694;
+}
+
+:root {
+  color-scheme: light;
+
+  /* — neutrals: cool paper, never pure white */
+  --canvas: #f4f6f8;
+  --surface: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-sunken: #eaeef2;
+  --hairline: rgb(15 18 22 / 0.08);
+  --hairline-strong: rgb(15 18 22 / 0.14);
+  --text-primary: #12161b;
+  --text-secondary: #5a6572;
+  --text-tertiary: #8b95a1;
+
+  /* — phase accents (light) */
+  --accent-focus: #3fa694;
+  --accent-short-break: #d98e5f;
+  --accent-long-break: #7a80d0;
+  --accent-ember: #d4503c; /* destructive only */
+
+  /* — priority: dots and rails only, never fills */
+  --priority-high: #e0685a;
+  --priority-medium: #e3a857;
+  --priority-low: #6fa8a0;
+
+  /* — task colors, all deliberately desaturated */
+  --task-sage: #7ba098;
+  --task-slate: #7c8b9e;
+  --task-iris: #8e93d9;
+  --task-apricot: #dda077;
+  --task-clay: #c08370;
+  --task-moss: #8aa06e;
+  --task-fog: #9aa3ad;
+  --task-plum: #a085b0;
+
+  /* — depth: tinted with the canvas hue, never pure black */
+  --shadow-sm: 0 1px 2px rgb(11 14 18 / 0.06), 0 1px 1px rgb(11 14 18 / 0.04);
+  --shadow-md: 0 4px 12px rgb(11 14 18 / 0.08), 0 1px 3px rgb(11 14 18 / 0.06);
+  --shadow-lg: 0 16px 40px rgb(11 14 18 / 0.16), 0 4px 12px rgb(11 14 18 / 0.1);
+
+  /* — radii: iOS continuous corners, larger than feels right at first */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 20px;
+  --r-xl: 28px;
+  --r-full: 999px;
+
+  /* — motion */
+  --dur-fast: 150ms;
+  --dur-base: 220ms;
+  --dur-slow: 320ms;
+  --dur-ambient: 480ms;
+  --ease-ios: cubic-bezier(0.32, 0.72, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+
+  /* — daylight signature, overwritten per hour by DaylightLayer */
+  --daylight-tint: rgb(120 140 160 / 0.03);
+
+  /* — default phase */
+  --accent: var(--accent-focus);
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --canvas: #0f1216;
+  --surface: #171b21;
+  --surface-raised: #1e242b;
+  --surface-sunken: #0b0e12;
+  --hairline: rgb(255 255 255 / 0.07);
+  --hairline-strong: rgb(255 255 255 / 0.12);
+  --text-primary: #edf0f3;
+  --text-secondary: #98a2ae;
+  --text-tertiary: #67717d;
+
+  --accent-focus: #63c9b6;
+  --accent-short-break: #efa97a;
+  --accent-long-break: #9aa0e8;
+  --accent-ember: #e5624f;
+
+  /* depth comes from surface lightness in dark mode; a black shadow on a
+     dark card is invisible, so shadows only carry the big elevations */
+  --shadow-sm: 0 0 0 0 transparent;
+  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.4);
+  --shadow-lg: 0 24px 64px rgb(0 0 0 / 0.55);
+}
+
+/* — phase drives the accent; setting data-phase on <html> retints the whole app */
+[data-phase="focus"] {
+  --accent: var(--accent-focus);
+}
+[data-phase="short_break"] {
+  --accent: var(--accent-short-break);
+}
+[data-phase="long_break"] {
+  --accent: var(--accent-long-break);
+}
+
+/* ==========================================================================
+   Tailwind theme — `inline` so utilities reference the live var and follow
+   theme/phase switches instead of baking in a value at build time.
+   ========================================================================== */
+
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-surface-sunken: var(--surface-sunken);
+  --color-hairline: var(--hairline);
+  --color-hairline-strong: var(--hairline-strong);
+
+  --color-accent: var(--accent);
+  --color-ember: var(--accent-ember);
+
+  --color-ink: var(--text-primary);
+  --color-ink-2: var(--text-secondary);
+  --color-ink-3: var(--text-tertiary);
+
+  --color-priority-high: var(--priority-high);
+  --color-priority-medium: var(--priority-medium);
+  --color-priority-low: var(--priority-low);
+
+  --color-task-sage: var(--task-sage);
+  --color-task-slate: var(--task-slate);
+  --color-task-iris: var(--task-iris);
+  --color-task-apricot: var(--task-apricot);
+  --color-task-clay: var(--task-clay);
+  --color-task-moss: var(--task-moss);
+  --color-task-fog: var(--task-fog);
+  --color-task-plum: var(--task-plum);
+
+  --radius-sm: var(--r-sm);
+  --radius-md: var(--r-md);
+  --radius-lg: var(--r-lg);
+  --radius-xl: var(--r-xl);
+
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+
+  --font-display: var(--font-archivo), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+
+  /* type scale — docs/04 §2 */
+  --text-display-xl: 72px;
+  --text-display-xl--line-height: 0.9;
+  --text-display-xl--letter-spacing: -0.04em;
+  --text-display-xl--font-weight: 600;
+
+  --text-display-l: 56px;
+  --text-display-l--line-height: 0.95;
+  --text-display-l--letter-spacing: -0.035em;
+  --text-display-l--font-weight: 600;
+
+  --text-display-m: 40px;
+  --text-display-m--line-height: 1;
+  --text-display-m--letter-spacing: -0.03em;
+  --text-display-m--font-weight: 600;
+
+  --text-title-l: 24px;
+  --text-title-l--line-height: 1.2;
+  --text-title-l--letter-spacing: -0.02em;
+  --text-title-l--font-weight: 600;
+
+  --text-title-m: 18px;
+  --text-title-m--line-height: 1.3;
+  --text-title-m--letter-spacing: -0.01em;
+  --text-title-m--font-weight: 600;
+
+  --text-body: 15px;
+  --text-body--line-height: 1.5;
+
+  --text-body-sm: 13px;
+  --text-body-sm--line-height: 1.45;
+
+  --text-label: 13px;
+  --text-label--line-height: 1.2;
+  --text-label--font-weight: 500;
+
+  --text-eyebrow: 11px;
+  --text-eyebrow--line-height: 1;
+  --text-eyebrow--letter-spacing: 0.14em;
+  --text-eyebrow--font-weight: 600;
+}
+
+/* ==========================================================================
+   Base
+   ========================================================================== */
+
+@layer base {
+  html {
+    /* the phase cross-fade — docs/04 §4 */
+    transition: --accent var(--dur-ambient) var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    background: var(--canvas);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Visible focus everywhere. Never remove without a replacement. */
+  :focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  button,
+  input,
+  textarea,
+  select {
+    font: inherit;
+    color: inherit;
+  }
+
+  ::selection {
+    background: color-mix(in oklch, var(--accent) 28%, transparent);
+  }
+}
+
+/* ==========================================================================
+   Component-level utilities
+   ========================================================================== */
+
+@layer components {
+  /* Condensed uppercase data voice — Archivo at wdth 87 */
+  .eyebrow {
+    font-family: var(--font-display);
+    font-size: 11px;
+    line-height: 1;
+    font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    font-variation-settings: "wdth" 87;
+  }
+
+  /* Expanded instrument voice — timer digits, stat heroes */
+  .numerals {
+    font-family: var(--font-display);
+    font-variant-numeric: tabular-nums;
+    font-variation-settings: "wdth" 112;
+  }
+
+  /* iOS translucent material — tab bar, sheet headers, control rails */
+  .material {
+    background: color-mix(in srgb, var(--surface) 72%, transparent);
+    backdrop-filter: saturate(180%) blur(20px);
+    -webkit-backdrop-filter: saturate(180%) blur(20px);
+  }
+
+  @supports not (backdrop-filter: blur(1px)) {
+    .material {
+      background: var(--surface);
+    }
+  }
+
+  /* Accent washes */
+  .accent-muted {
+    background: color-mix(in oklch, var(--accent) 18%, transparent);
+  }
+  .accent-quiet {
+    background: color-mix(in oklch, var(--accent) 9%, transparent);
+  }
+
+  /* iOS inset list separator */
+  .inset-divider > * + * {
+    border-top: 1px solid var(--hairline);
+  }
+}
+
+/* ==========================================================================
+   Reduced motion — every spring collapses to a short fade
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 120ms !important;
+    scroll-behavior: auto !important;
+  }
+}

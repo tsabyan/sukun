@@ -16,7 +16,7 @@ One prompt per roadmap phase. Copy-paste as-is.
 ```
 Read docs/02-architecture.md and docs/04-design-system.md in full before writing code.
 
-Set up the Next.js 15 project in this directory:
+Set up the Next.js 16 project in this directory:
 - create-next-app: TypeScript strict, Tailwind v4, App Router, src/ dir, @/* alias
 - Fonts via next/font/google: Archivo Variable and Instrument Sans Variable, both
   self-hosted with display swap

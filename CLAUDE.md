@@ -1,6 +1,6 @@
 # Sukun — repo rules
 
-A calm Pomodoro web app. Local-first PWA on Next.js 15 + Supabase, deployed on Vercel.
+A calm Pomodoro web app. Local-first PWA on Next.js 16 + Supabase, deployed on Vercel.
 
 **Sukun** · سكون — Arabic for *stillness*, and the diacritic that marks a pause. The mark is a small circle; so is the focus ring. Brand spec in `docs/04-design-system.md` §0.1.
 
@@ -23,7 +23,7 @@ If the code and a doc disagree, the doc wins — or the doc is wrong and you say
 
 1. **No component imports Dexie or `@supabase/supabase-js` directly.** All data access goes through `src/lib/db/repo.ts`.
 2. **The timer never decrements a counter.** Remaining time is always `endsAt - Date.now()`. See `docs/02-architecture.md` §3.
-3. **No hardcoded colors, radii, shadows, or durations** outside `src/styles/globals.css`. Everything is a token.
+3. **No hardcoded colors, radii, shadows, or durations** outside `src/styles/globals.css`. Everything is a token. One exception, already taken: `viewport.themeColor` in `src/app/layout.tsx` is a server-emitted meta tag and cannot read a CSS variable. If a canvas color changes, change it there too.
 4. **No new dependencies** without adding a line to `docs/02-architecture.md` §1 and saying why. The stack is decided.
 5. **Soft delete only.** Every query filters `deletedAt == null`.
 6. **`tabular-nums` on every number that changes over time.**

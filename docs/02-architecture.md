@@ -4,15 +4,16 @@
 
 | Layer | Choice | Why this one |
 |-------|--------|--------------|
-| Framework | **Next.js 15**, App Router, TypeScript strict | Vercel-native, zero-config deploy, RSC where useful. Most of this app is client-side. |
+| Framework | **Next.js 16**, App Router, TypeScript strict | Vercel-native, zero-config deploy, RSC where useful. Most of this app is client-side. |
 | Styling | **Tailwind CSS v4** + CSS custom properties | v4 reads design tokens from CSS vars — one source of truth for light/dark. |
 | Animation | **Motion** (`motion/react`, formerly Framer Motion) | Spring physics, layout animations, `AnimatePresence` for sheets. |
 | Local DB | **Dexie 4** (IndexedDB) + `dexie-react-hooks` | Live queries, transactions, no server round-trip. `useLiveQuery` re-renders on write. |
 | Client state | **Zustand** | Timer machine + UI state. Tiny, no provider tree. |
 | Remote DB / Auth | **Supabase** (Postgres + Auth + RLS) | Free tier, anonymous auth, row-level security means no backend to write. |
-| PWA | **Serwist** (`@serwist/next`) | Maintained Workbox successor with first-class Next 15 support. |
+| PWA | **Serwist** (`@serwist/next`) | Maintained Workbox successor with first-class Next 16 support. |
 | Charts | Hand-rolled SVG | Heatmap and bar chart are ~80 lines each. A chart library is 40KB for nothing. |
 | Icons | **Lucide React** | Clean, consistent, tree-shakeable. |
+| Class names | **clsx** + **tailwind-merge** (`cn()` in `lib/utils/cn.ts`) | Conditional classes with conflict resolution, so a `className` prop can override a component default instead of fighting it. 2KB combined. |
 | Dates | **date-fns** v4 | Tree-shakeable, timezone-aware via `@date-fns/tz`. |
 | Testing | **Vitest** + Testing Library; **Playwright** for the timer E2E | The timer is the one thing that must be tested properly. |
 
@@ -202,6 +203,9 @@ Almost everything is a client component — the data lives in the browser. Keep 
 Consequence: **guard the first paint against hydration flash.** Two things must be resolved before paint:
 
 1. **Theme** — inline blocking script in `<head>` reads `localStorage.theme`, falls back to `prefers-color-scheme`, sets `data-theme` on `<html>`.
+
+   Because that script has already written the correct value to the DOM, React must **read** the theme rather than own it. `lib/theme/store.ts` exposes the `<html>` attributes as an external store and `useTheme` subscribes with `useSyncExternalStore`. Copying the attribute into `useState` inside an effect would work, but it costs a cascading render on every mount and creates a second source of truth that can drift from the DOM. The same applies to `data-phase`.
+
 2. **Timer state** — read from IndexedDB, which is async. Render the timer with a skeleton until the first read resolves (one frame, ~5ms). Do *not* render `25:00` and then snap to `13:42`.
 
 ## 7. Performance budget
