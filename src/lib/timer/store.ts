@@ -12,7 +12,7 @@ import {
 import { playAlert, resumeAudioIfNeeded, unlockAudio } from './audio'
 import { notifyPhaseEnd } from './notifications'
 import { getMeta, META_KEYS, setMeta } from '@/lib/db/schema'
-import { getSettings, recordSession } from '@/lib/db/repo'
+import { getSettings, getTask, recordSession } from '@/lib/db/repo'
 import { DEFAULT_SETTINGS } from '@/lib/db/seed'
 import { toLocalDate } from '@/lib/utils/dates'
 import { haptic } from '@/lib/utils/haptics'
@@ -200,12 +200,21 @@ export const useTimerStore = create<TimerState>((set, get) => {
       const stored = await getMeta<TimerRuntime>(META_KEYS.timerRuntime)
 
       const runtime = stored ?? initialRuntime(durations)
+
+      // Only the id is persisted, so the title has to be looked back up —
+      // otherwise the ring loses its subtitle on every reload.
+      let attachedTaskTitle: string | null = null
+      if (runtime.taskId) {
+        attachedTaskTitle = (await getTask(runtime.taskId))?.title ?? null
+      }
+
       set({
         runtime,
         durations,
         soundId: settings.soundId,
         volume: settings.volume,
         remainingMs: computeRemaining(runtime, Date.now()),
+        attachedTaskTitle,
         hydrated: true,
       })
 

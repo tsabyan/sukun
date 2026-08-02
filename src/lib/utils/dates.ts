@@ -43,6 +43,14 @@ export function daysBetween(from: LocalDate, to: LocalDate): number {
   return Math.round(ms / 86_400_000)
 }
 
+/** MM:SS for the countdown. Rounds up, so 24:59.4 still reads 25:00. */
+export function formatCountdown(ms: number): string {
+  const total = Math.max(0, Math.ceil(ms / 1000))
+  const minutes = Math.floor(total / 60)
+  const seconds = total % 60
+  return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+}
+
 export function formatDuration(seconds: number): string {
   const h = Math.floor(seconds / 3600)
   const m = Math.round((seconds % 3600) / 60)
