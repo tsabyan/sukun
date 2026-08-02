@@ -207,6 +207,8 @@ export type SyncTable =
   | 'taskTags'
   | 'settings'
   | 'achievements'
+  /** insert-only; read from the Supabase dashboard, never from the app */
+  | 'waitlist'
 
 export interface OutboxEntry {
   id: string

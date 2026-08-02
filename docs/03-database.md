@@ -252,6 +252,8 @@ create policy "waitlist insert" on waitlist
 
 Read the waitlist from the Supabase dashboard, never from the app.
 
+**Client path.** `repo.joinWaitlist()` queues the row through the ordinary outbox, so a signup made offline still lands in Postgres when sync first runs. The email is also written to `meta.waitlistEmail` so the app knows not to ask twice. There is no local `waitlist` table — nothing reads it back.
+
 ---
 
 ## Migration 006 — stats views

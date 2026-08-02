@@ -268,7 +268,9 @@ Bottom sheet, snap points `['60%', '95%']`. Same component for create and edit; 
 
 - **Header actions** — export (JSON to clipboard), edit (opens S5 sheet), delete (confirm → soft delete → back to `/tasks` with a 6s Undo toast).
 - **Start focus session** attaches the task and routes to `/`, timer running.
-- **Subtask row** — checkbox, title (inline-editable on tap), priority badge, updated date. Long-press reorders. Swipe left deletes.
+- **Subtask row** — checkbox, title (inline-editable on tap), priority badge (tap cycles high → medium → low), updated date, an always-visible delete button, and a grip handle to reorder.
+
+  Reordering uses Motion's `Reorder` rather than a drag-and-drop library: the list is short, vertical, and single-axis, which is exactly what it covers. A grip handle rather than long-press-anywhere, because long-press on a row that is also tap-to-edit makes both gestures feel unreliable. Delete is a visible button rather than a swipe — a hidden swipe action is the only way to delete on touch, and a hidden-only affordance for a destructive-but-undoable action is worse than a small button.
 - **Auto-complete parent:** when the last subtask is checked, show a toast — "All subtasks done. Mark task complete?" with a Complete action. Never auto-complete silently; a checklist finishing is not the same as work being finished, and silent state changes erode trust.
 - **Session history** — every session logged against this task, newest first, capped at 10 with a "Show all" expander.
 - **No AI generate button in v1.** See [01-prd.md](01-prd.md) §8.

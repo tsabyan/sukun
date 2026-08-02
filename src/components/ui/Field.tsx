@@ -59,6 +59,8 @@ type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'id'> & {
   error?: string
   optional?: boolean
   wrapperClassName?: string
+  /** React 19 takes ref as an ordinary prop — no forwardRef needed */
+  ref?: React.Ref<HTMLInputElement>
 }
 
 export function Field({

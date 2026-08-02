@@ -1,4 +1,4 @@
-import { db, assertBrowser, META_KEYS, setMeta } from './schema'
+import { db, assertBrowser, getMeta, META_KEYS, setMeta } from './schema'
 import { currentUserId } from './identity'
 import { ensureSettings, DEFAULT_SETTINGS } from './seed'
 import { enqueue } from '@/lib/sync/outbox'
@@ -592,6 +592,41 @@ export async function deleteAllData(): Promise<void> {
   })
 }
 
+/* ======================================================== waitlist */
+
+/**
+ * The free tier caps active tasks. Hitting it opens an upsell that captures
+ * intent, not payment — docs/01-prd.md §7.
+ */
+export const FREE_TASK_LIMIT = 10
+/** The meter appears before the wall does, so the cap is never a surprise. */
+export const FREE_TASK_WARN_AT = 7
+
+export async function getWaitlistEmail(): Promise<string | null> {
+  assertBrowser('getWaitlistEmail')
+  return (await getMeta<string>(META_KEYS.waitlistEmail)) ?? null
+}
+
+/**
+ * Queued through the outbox like everything else, so it survives being
+ * offline and lands in Postgres whenever sync first runs. Nothing reads the
+ * waitlist back — RLS allows insert only.
+ */
+export async function joinWaitlist(email: string, source: string): Promise<void> {
+  assertBrowser('joinWaitlist')
+  const userId = await currentUserId()
+
+  await db.transaction('rw', [db.outbox, db.meta], async () => {
+    await enqueue('waitlist', email, 'upsert', {
+      email,
+      source,
+      userId,
+      createdAt: nowIso(),
+    })
+    await db.meta.put({ key: META_KEYS.waitlistEmail, value: email })
+  })
+}
+
 /* ============================================================ live */
 
 /**
@@ -629,6 +664,14 @@ export const live = {
   settings: (userId: string) => db.settings.get(userId),
 
   activeTaskCount: () => db.tasks.where('status').equals('active').filter(alive).count(),
+
+  completedTaskCount: () =>
+    db.tasks.where('status').equals('completed').filter(alive).count(),
+
+  subtaskProgress: async (taskId: string) => {
+    const rows = await db.subtasks.where('taskId').equals(taskId).filter(alive).toArray()
+    return { done: rows.filter((s) => s.isDone).length, total: rows.length }
+  },
 
   outboxCount: () => db.outbox.count(),
 }
@@ -672,6 +715,8 @@ export const repo = {
   exportAll,
   importAll,
   deleteAllData,
+  getWaitlistEmail,
+  joinWaitlist,
   live,
 }
 

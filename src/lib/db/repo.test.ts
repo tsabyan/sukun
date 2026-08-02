@@ -227,6 +227,38 @@ describe('outbox', () => {
   })
 })
 
+describe('waitlist', () => {
+  it('queues the email for sync and remembers it locally', async () => {
+    await repo.joinWaitlist('someone@example.com', 'task_cap')
+
+    const queued = await db.outbox.where('table').equals('waitlist').toArray()
+    expect(queued).toHaveLength(1)
+    expect(queued[0].op).toBe('upsert')
+    expect((queued[0].payload as { email: string }).email).toBe('someone@example.com')
+    expect((queued[0].payload as { source: string }).source).toBe('task_cap')
+
+    expect(await repo.getWaitlistEmail()).toBe('someone@example.com')
+  })
+
+  it('reports no email before anyone signs up', async () => {
+    expect(await repo.getWaitlistEmail()).toBeNull()
+  })
+})
+
+describe('free tier', () => {
+  it('counts toward the cap only while tasks are open', async () => {
+    for (let i = 0; i < repo.FREE_TASK_LIMIT; i++) {
+      await repo.createTask({ title: `task ${i}` })
+    }
+    expect(await repo.countActiveTasks()).toBe(repo.FREE_TASK_LIMIT)
+
+    const [first] = await repo.listTasks({ status: 'active' })
+    await repo.completeTask(first.id)
+
+    expect(await repo.countActiveTasks()).toBe(repo.FREE_TASK_LIMIT - 1)
+  })
+})
+
 describe('settings', () => {
   it('creates defaults on first read and patches in place', async () => {
     const settings = await repo.getSettings()

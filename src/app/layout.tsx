@@ -7,6 +7,7 @@ import { AppShell } from '@/components/shell/AppShell'
 import { DaylightLayer } from '@/components/shell/DaylightLayer'
 import { DevBridge } from '@/components/dev/DevBridge'
 import { TimerEngine } from '@/components/timer/TimerEngine'
+import { ToastViewport } from '@/components/ui/Toast'
 
 // Instrument voice — timer digits, headings, condensed data labels.
 const archivo = Archivo({
@@ -63,6 +64,7 @@ export default function RootLayout({
         <ThemeProvider>
           <DaylightLayer />
           <AppShell>{children}</AppShell>
+          <ToastViewport />
           <TimerEngine />
           <DevBridge />
         </ThemeProvider>
