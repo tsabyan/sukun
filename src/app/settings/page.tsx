@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft } from 'lucide-react'
 import { SettingsGroup, SettingsRow, SettingsButtonRow } from '@/components/settings/SettingsList'
+import { AccountGroup } from '@/components/settings/AccountGroup'
 import { WheelPickerSheet } from '@/components/ui/WheelPicker'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -236,12 +237,7 @@ export default function SettingsPage() {
         </SettingsRow>
       </SettingsGroup>
 
-      <SettingsGroup
-        title="Account"
-        footnote="Everything is stored on this device. Sync arrives in a later release."
-      >
-        <SettingsRow label="Sync" description="Not connected yet" />
-      </SettingsGroup>
+      <AccountGroup />
 
       <SettingsGroup title="Data">
         <SettingsButtonRow

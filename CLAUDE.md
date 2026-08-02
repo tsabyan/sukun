@@ -29,8 +29,9 @@ If the code and a doc disagree, the doc wins — or the doc is wrong and you say
 6. **`tabular-nums` on every number that changes over time.**
 7. **Never touch `src/lib/timer/machine.test.ts` to make a test pass.** Those tests encode the invariants. Fix the implementation.
 8. **The `service_role` key never appears in this repo.** RLS is the authorization model.
-9. **Analytics get events, never user content.** No task titles, notes, or tag names leave the device.
-10. **44px minimum touch targets, visible focus rings, `prefers-reduced-motion` respected.** Not a polish phase — write it this way the first time.
+9. **All Postgres objects live in the `sukun` schema, never `public`.** The database is shared with other apps. New tables need a matching grant — see `supabase/migrations/*_grants.sql` and `docs/08-deployment.md` §2.
+10. **Analytics get events, never user content.** No task titles, notes, or tag names leave the device.
+11. **44px minimum touch targets, visible focus rings, `prefers-reduced-motion` respected.** Not a polish phase — write it this way the first time.
 
 ## Conventions
 

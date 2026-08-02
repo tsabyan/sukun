@@ -22,28 +22,57 @@ Because the app is local-first, this is a soft failure — the app still works o
 
 ## 2. Supabase setup
 
+### Everything lives in the `sukun` schema, not `public`
+
+This project's database is shared with other applications — it already carries `stash` and `tend` schemas. `public` is not ours to take: an app that scatters tables called `tasks` and `sessions` into a shared public schema will collide with a neighbour eventually, and the collision surfaces as a baffling RLS failure rather than an obvious error.
+
+Three consequences, and all three are silent failures if missed:
+
+1. **PostgREST does not expose a non-public schema until you list it.** Every query returns `PGRST106 Invalid schema` until then.
+2. **Supabase's default grants only cover `public`.** Usage and table privileges must be granted explicitly — including *default* privileges, or the next table added in a later migration is invisible to the API. Migration `…_grants.sql` does this.
+3. **The client must set `db: { schema: 'sukun' }`.** Without it the client queries `public` and 404s.
+
+### Apply the schema
+
+Migrations live in `supabase/migrations/`, timestamped and idempotent. Either:
+
 ```bash
-npm i -g supabase
 supabase login
-supabase init
 supabase link --project-ref <your-ref>
-```
-
-Put migrations 001–006 from [03](03-database.md) in `supabase/migrations/` with timestamped filenames, then:
-
-```bash
 supabase db push
 ```
 
-**Dashboard settings:**
+…or paste `supabase/apply-all.sql` into the dashboard SQL editor and run it once. That file is every migration concatenated in order; regenerate it with `npm run db:bundle` after adding one.
+
+### Dashboard settings
 
 | Setting | Value |
 |---------|-------|
+| Settings → API → **Exposed schemas** | **Add `sukun`** alongside whatever is already there. Nothing works until this is set. |
 | Authentication → Providers → **Anonymous sign-ins** | **Enabled** — required for the zero-friction first run |
 | Authentication → Providers → Email | Enabled, **Confirm email on**, magic link only |
 | Authentication → URL Configuration → Site URL | your production URL |
 | Redirect URLs | `https://yourdomain.com/auth/callback`, `http://localhost:3000/auth/callback` |
 | Authentication → Rate limits | Leave defaults. Anonymous sign-ins are rate-limited per IP — that's a feature. |
+
+### Checking it from the shell
+
+The anon key is public, so these are safe to run anywhere:
+
+```bash
+set -a; . ./.env; set +a
+K="$NEXT_PUBLIC_SUPABASE_ANON_KEY"; U="$NEXT_PUBLIC_SUPABASE_URL"
+
+# schema exposed and migrated? expects [] rather than an error
+curl -s "$U/rest/v1/tasks?select=id&limit=1" \
+  -H "apikey: $K" -H "Authorization: Bearer $K" -H "Accept-Profile: sukun"
+
+# anonymous sign-ins on? expects a token, not anonymous_provider_disabled
+curl -s -X POST "$U/auth/v1/signup" -H "apikey: $K" \
+  -H "Content-Type: application/json" -d '{}'
+```
+
+A free project also **pauses after 7 days idle**, and a paused project's subdomain stops resolving entirely — `getent hosts <ref>.supabase.co` returning NXDOMAIN means paused or deleted, not a typo. §4 keeps it awake.
 
 **Verify RLS before you ship.** In the SQL editor, sign in as two different users and confirm each sees only their own rows. RLS that's enabled but has a wrong policy looks identical to working RLS until it doesn't.
 

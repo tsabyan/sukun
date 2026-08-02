@@ -322,6 +322,17 @@
   }
 }
 
+/* Indeterminate sync bar — it sweeps rather than fills, because there is no
+   meaningful percentage to report. */
+@keyframes sukun-sync {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(400%);
+  }
+}
+
 /* The separator between MM and SS — a slow heartbeat, not a blink. */
 @keyframes sukun-pulse {
   0%,
