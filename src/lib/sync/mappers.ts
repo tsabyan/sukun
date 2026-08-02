@@ -66,8 +66,14 @@ export const REMOTE_TABLE: Record<SyncTable, string> = {
   waitlist: 'waitlist',
 }
 
-/** Which columns identify a row for upsert. */
-export const CONFLICT_TARGET: Record<SyncTable, string> = {
+/**
+ * Which columns identify a row for upsert.
+ *
+ * `waitlist` is absent on purpose — it is pushed with a plain insert. An
+ * upsert needs both INSERT and UPDATE policies, and waitlist has only the
+ * former by design.
+ */
+export const CONFLICT_TARGET: Record<Exclude<SyncTable, 'waitlist'>, string> = {
   tasks: 'id',
   subtasks: 'id',
   sessions: 'id',
@@ -75,7 +81,6 @@ export const CONFLICT_TARGET: Record<SyncTable, string> = {
   taskTags: 'task_id,tag_id',
   settings: 'user_id',
   achievements: 'user_id,key',
-  waitlist: 'email',
 }
 
 /** Tables the pull step walks, in dependency order. */

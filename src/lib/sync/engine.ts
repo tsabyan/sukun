@@ -81,10 +81,20 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
           ...toRemote(table, entry.payload),
           user_id: userId,
         }))
-        const { error } = await supabase
-          .from(REMOTE_TABLE[table])
-          .upsert(rows, { onConflict: CONFLICT_TARGET[table] })
-        if (error) throw error
+
+        if (table === 'waitlist') {
+          // Waitlist is insert-only: it has an INSERT policy and deliberately
+          // no UPDATE policy, and PostgREST needs both to upsert. A duplicate
+          // email is not a failure either — it means this address already
+          // signed up, which is exactly the state we wanted.
+          const { error } = await supabase.from(REMOTE_TABLE[table]).insert(rows)
+          if (error && error.code !== '23505') throw error
+        } else {
+          const { error } = await supabase
+            .from(REMOTE_TABLE[table])
+            .upsert(rows, { onConflict: CONFLICT_TARGET[table] })
+          if (error) throw error
+        }
       }
 
       // Only join rows are ever hard-deleted; everything else soft-deletes and
