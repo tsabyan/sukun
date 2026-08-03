@@ -255,6 +255,12 @@ Read the waitlist from the Supabase dashboard, never from the app.
 
 **Client path.** `repo.joinWaitlist()` queues the row through the ordinary outbox, so a signup made offline still lands in Postgres when sync first runs. The email is also written to `meta.waitlistEmail` so the app knows not to ask twice. There is no local `waitlist` table — nothing reads it back.
 
+### `device_days` — counting guests
+
+`auth.users` counts people who signed up. The app is deliberately usable without an account, so most users never appear there. `sukun.device_days` holds one row per device per local day — `device_id` (a random UUID for the install, not a fingerprint), `local_date`, and a nullable `user_id` that fills in once the device has an account.
+
+Insert-only for the same reason as the waitlist, and pushed the same way. Total users, daily actives, guest-vs-registered split, and day-7 retention all fall out of that one table; the queries are in [10-validation.md](10-validation.md) §2, along with two convenience views.
+
 **Pushed with a plain insert, never an upsert.** PostgREST implements upsert as `insert … on conflict do update`, which requires an UPDATE policy as well as an INSERT one. Waitlist has only INSERT, on purpose, so an upsert fails with `42501 violates row-level security` — a message that points at the policy rather than at the operation, and costs an hour to read correctly. The sync engine inserts, and treats `23505` (duplicate email) as success: that address is already on the list, which is the state we wanted.
 
 ---

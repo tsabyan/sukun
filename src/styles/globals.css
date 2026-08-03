@@ -297,6 +297,20 @@
   .inset-divider > * + * {
     border-top: 1px solid var(--hairline);
   }
+
+  /**
+   * The onboarding overlay ships in the HTML and is revealed by the blocking
+   * script's attribute, so a first visit paints it immediately instead of
+   * waiting for hydration and an IndexedDB read. `display: none` keeps it out
+   * of the accessibility tree for everyone else.
+   */
+  [data-onboarding-overlay] {
+    display: none;
+  }
+
+  [data-onboarding="pending"] [data-onboarding-overlay] {
+    display: flex;
+  }
 }
 
 /* ==========================================================================

@@ -34,47 +34,52 @@ function isReady(entry: OutboxEntry, now: number): boolean {
 /* -------------------------------------------------------------------- push */
 
 /**
- * Waitlist signups push without a session, on the anon role.
+ * The two insert-only tables, pushed without needing a session.
  *
- * Almost nobody hitting the Pro gate will have signed in, and waitlist
- * conversion is the price signal the whole validation plan rests on
- * (docs/10-validation.md §1). Leaving those rows stranded in the outbox until
- * someone happens to create an account would quietly report zero demand.
+ * Both carry signal about people who never sign in, and both would be useless
+ * if they waited for an account. Waitlist conversion is the price signal the
+ * validation plan rests on; device heartbeats are how guests are counted at
+ * all. Stranding either in the outbox would quietly report zero.
  */
-async function pushWaitlist(userId: string | null): Promise<void> {
+const ANON_TABLES = ['waitlist', 'deviceDays'] as const
+
+async function pushAnonTables(userId: string | null): Promise<void> {
   const supabase = getSupabase()
   if (!supabase) return
 
   const now = Date.now()
-  const entries = (await pending(PUSH_BATCH)).filter(
-    (entry) => entry.table === 'waitlist' && isReady(entry, now),
-  )
-  if (entries.length === 0) return
+  const queued = await pending(PUSH_BATCH)
 
-  const rows = entries.map((entry) => ({
-    ...toRemote('waitlist', entry.payload),
-    // The column is a nullable FK to auth.users; a device-local id is not a
-    // uuid and would fail the constraint.
-    user_id: userId,
-  }))
+  for (const table of ANON_TABLES) {
+    const entries = queued.filter((entry) => entry.table === table && isReady(entry, now))
+    if (entries.length === 0) continue
 
-  try {
-    // Insert, never upsert: waitlist has an INSERT policy and deliberately no
-    // UPDATE policy, and PostgREST needs both to upsert. A duplicate email is
-    // success — that address is already on the list.
-    const { error } = await supabase.from(REMOTE_TABLE.waitlist).insert(rows)
-    if (error && error.code !== '23505') throw error
-    await db.outbox.bulkDelete(entries.map((e) => e.id))
-  } catch (error) {
-    console.warn('[sukun] waitlist push failed', error)
-    await db.transaction('rw', db.outbox, async () => {
-      for (const entry of entries) {
-        await db.outbox.update(entry.id, {
-          attempts: entry.attempts + 1,
-          createdAt: Date.now(),
-        })
-      }
-    })
+    const rows = entries.map((entry) => ({
+      ...toRemote(table, entry.payload),
+      // A nullable FK to auth.users. The device-local id is not a uuid and
+      // would fail the constraint, so signed out sends null.
+      user_id: userId,
+    }))
+
+    try {
+      // Insert, never upsert: these tables have an INSERT policy and
+      // deliberately no UPDATE policy, and PostgREST needs both to upsert.
+      // A duplicate is success — that email is already on the list, or that
+      // device was already counted today.
+      const { error } = await supabase.from(REMOTE_TABLE[table]).insert(rows)
+      if (error && error.code !== '23505') throw error
+      await db.outbox.bulkDelete(entries.map((e) => e.id))
+    } catch (error) {
+      console.warn(`[sukun] ${table} push failed`, error)
+      await db.transaction('rw', db.outbox, async () => {
+        for (const entry of entries) {
+          await db.outbox.update(entry.id, {
+            attempts: entry.attempts + 1,
+            createdAt: Date.now(),
+          })
+        }
+      })
+    }
   }
 }
 
@@ -83,7 +88,9 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
   if (!supabase) return { pushed: 0, stalled: 0 }
 
   const now = Date.now()
-  const all = (await pending(PUSH_BATCH)).filter((entry) => entry.table !== 'waitlist')
+  const all = (await pending(PUSH_BATCH)).filter(
+    (entry) => !ANON_TABLES.includes(entry.table as (typeof ANON_TABLES)[number]),
+  )
   const ready = all.filter((entry) => isReady(entry, now))
   const stalled = all.filter((entry) => entry.attempts >= MAX_ATTEMPTS).length
 
@@ -114,7 +121,7 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
         const { error } = await supabase
           .from(REMOTE_TABLE[table])
           .upsert(rows, {
-            onConflict: CONFLICT_TARGET[table as Exclude<SyncTable, 'waitlist'>],
+            onConflict: CONFLICT_TARGET[table as Exclude<SyncTable, 'waitlist' | 'deviceDays'>],
           })
         if (error) throw error
       }
@@ -166,7 +173,8 @@ const LOCAL_TABLE = {
 
 async function pullTable(table: SyncTable): Promise<number> {
   const supabase = getSupabase()
-  if (!supabase || table === 'waitlist') return 0
+  // Neither insert-only table is ever read back.
+  if (!supabase || table === 'waitlist' || table === 'deviceDays') return 0
 
   const cursors = (await getMeta<Record<string, string>>(META_KEYS.lastPulledAt)) ?? {}
   const since = cursors[table] ?? '1970-01-01T00:00:00.000Z'
@@ -257,7 +265,7 @@ export async function syncNow(): Promise<void> {
   if (!remoteUserId) {
     running = true
     try {
-      await pushWaitlist(null)
+      await pushAnonTables(null)
     } finally {
       running = false
       useSyncStore.getState().set({ state: 'idle' })
@@ -274,7 +282,7 @@ export async function syncNow(): Promise<void> {
     // anonymous auth this was a no-op, so it is now the step that matters.
     if ((await currentUserId()) !== remoteUserId) await adoptUserId(remoteUserId)
 
-    await pushWaitlist(remoteUserId)
+    await pushAnonTables(remoteUserId)
 
     const { stalled } = await pushOnce(remoteUserId)
     for (const table of PULL_TABLES) await pullTable(table)

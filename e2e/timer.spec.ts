@@ -127,8 +127,12 @@ test('attaches a task and counts a pomodoro against it', async ({ page }) => {
 
   await setFocusMinutes(page, 1)
   await page.getByRole('button', { name: 'Attach a task' }).click()
-  // Scoped to the picker: the same task also shows in Today's tasks behind it.
-  await page.getByRole('dialog').getByRole('button', { name: /E2E task/ }).click()
+  // Scoped to the picker: the same task also shows in Today's tasks behind it,
+  // and the hidden onboarding overlay is a dialog too — hence the name filter.
+  await page
+    .getByRole('dialog', { name: /What are you working on/i })
+    .getByRole('button', { name: /E2E task/ })
+    .click()
 
   await page.getByRole('button', { name: 'Start session' }).click()
   await page.waitForTimeout(62_000)

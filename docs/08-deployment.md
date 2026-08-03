@@ -245,13 +245,14 @@ Measured against a production build on the reference machine:
 | | Perf | A11y | Best practices | SEO |
 |---|---|---|---|---|
 | **Desktop** | **95** | 100 | 100 | 100 |
-| **Mobile** | **57** | 100 | 100 | 100 |
+| **Mobile** | **68–76** | 100 | 100 | 100 |
 
-The roadmap asked for mobile Performance ≥ 90. **It is not met, and no amount of bundle trimming got close.** The diagnosis is worth writing down so nobody re-runs it:
+Mobile Performance was 54–57 before the fix below. **It still does not reach the 90 the roadmap asked for**, and the remaining gap is structural rather than an oversight.
 
-- FCP is 0.8s and CLS is 0.001 — the page arrives fast and doesn't move.
-- LCP is ~6s and TBT ~1.1s, both dominated by **2.7s of script evaluation** under Lighthouse's 4× CPU throttle. The payload is ordinary for a client app: react-dom 227KB, Motion 157KB, Dexie 96KB raw.
-- Deferring `SyncProvider` cut 275KB from the first-paint bundle and moved the score by ~2 points. Size is not the constraint; **hydration cost is**.
-- On a first visit the LCP element is the onboarding overlay, which only renders after hydration *and* an IndexedDB read. Lighthouse always tests a cold profile, so it always measures that worst case. Deferring the overlay made LCP *worse*, not better — it is now loaded eagerly with only its heavy task-form dependency lazily imported.
+**What was actually wrong.** The LCP element on a first visit is the onboarding overlay, and it could not paint until hydration finished *and* an IndexedDB read resolved — 5.7 seconds of pure render delay. The fix is the same trick already used for theming: the blocking script in `<head>` reads a `localStorage` flag and sets `data-onboarding="pending"` on `<html>`, the overlay ships in the server HTML, and CSS reveals it. `localStorage` can be stale, so the component still checks IndexedDB after mount and dismisses itself if there is history — an optimistic show that self-corrects in a frame beats a correct one that costs five seconds. **LCP 6.1s → 2.6s.**
 
-Getting mobile above 90 means reducing hydration work, which means one of: dropping Motion for CSS animations (contradicts doc 02 §1), server-rendering real content (contradicts local-first — there is no server-side data), or shipping less of the app on first load. All are real options; none are free, and none should be done on a hunch. Re-measure with `--form-factor=mobile` before and after, and treat the desktop 95 as evidence the app itself is not slow.
+*One trap in that:* the overlay must not carry Tailwind's `flex` class. Tailwind's utilities layer beats the components layer, so `display: flex` overrides the `display: none` that hides it, and the overlay sits invisibly on top of the app swallowing every click. The E2E suite caught it; nothing else would have.
+
+**What is left.** TBT of roughly 0.8–2s depending on machine load, all of it script evaluation under Lighthouse's 4× CPU throttle. The payload is ordinary for a client app — react-dom 227KB, Motion 157KB, Dexie 96KB raw — and deferring the Supabase client cut 275KB from first paint while moving the score about two points. **Size is not the constraint; hydration cost is.**
+
+Going further means one of: dropping Motion for CSS animations (contradicts doc 02 §1), server-rendering real content (contradicts local-first — there is no server-side data), or shipping less of the app on first load. All are real options; none are free. Note also that Lighthouse always tests a cold profile, so it always measures the first-run path including onboarding — a returning user never pays that. Re-measure with `--form-factor=mobile` three times before believing any change; run-to-run variance on a loaded machine is ±10 points.

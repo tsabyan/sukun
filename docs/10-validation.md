@@ -15,7 +15,52 @@ The point of the free tier is to find out whether anyone wants this before spend
 
 Everything else — pageviews, likes, sign-ups — is noise you can produce with a good screenshot. Retention is the only metric that can't be faked by marketing.
 
-## 2. Instrumentation
+## 2. Counting people who never sign in
+
+The app works with no account, on purpose. That makes `auth.users` the wrong number to look at — it counts people who *signed up*, not people who *use the thing*, and most users never will.
+
+So the app writes one row per device per local day to `sukun.device_days`:
+
+- `device_id` — a random UUID generated on the device. Not a fingerprint, not an IP, not derived from anything. It identifies an install, not a person.
+- `local_date` — the user's calendar day.
+- `user_id` — null for a guest, set once that device has an account, so guests and registered users are one funnel rather than two disconnected numbers.
+
+Insert-only: there is no UPDATE policy to abuse, and a repeat insert on the same day is a harmless duplicate-key error rather than something the client has to coordinate. It goes through the outbox, so a day spent offline still lands later.
+
+**The dashboard queries.** Run these in the Supabase SQL editor:
+
+```sql
+-- headline: how many people, and how many of them signed up
+select * from sukun.device_totals;
+
+-- daily actives, split guest vs registered
+select * from sukun.daily_active_devices limit 30;
+
+-- new devices per day
+select min(local_date) as joined_on, count(*) as new_devices
+from (select device_id, min(local_date) as local_date
+      from sukun.device_days group by device_id) f
+group by 1 order by 1 desc;
+
+-- THE number: day-7 retention by signup cohort
+with first_day as (
+  select device_id, min(local_date) as cohort from sukun.device_days group by 1
+)
+select f.cohort,
+       count(distinct f.device_id) as joined,
+       count(distinct d.device_id) filter (
+         where d.local_date between f.cohort + 1 and f.cohort + 7
+       ) as returned_within_7d
+from first_day f
+left join sukun.device_days d using (device_id)
+group by f.cohort order by f.cohort desc;
+```
+
+**What this does not measure.** A device is not a person: one user on a phone and a laptop counts twice until they sign in, and clearing browser storage starts a new device. Treat the number as *installs*, and the ratio as retention. That is exactly what the day-30 decision needs.
+
+**Why not anonymous auth.** Supabase can create a real `auth.uid()` per guest, which would count them in `auth.users` directly. It was deliberately dropped: it fills the auth table with accounts nobody asked for, it needs a session before the app can do anything, and it makes "signed out" a state that does not exist. A random device id in one insert-only table gives the same count with none of that.
+
+## 3. Instrumentation
 
 Wire these events in Phase 9 (list in [08](08-deployment.md) §7). Three PostHog funnels:
 
@@ -27,7 +72,7 @@ Two things worth watching beyond the funnels: what fraction of users ever run **
 
 **Never send task titles, notes, or tag names to any analytics service.**
 
-## 3. Launch sequence
+## 4. Launch sequence
 
 Free channels, in order. Each one is a separate week so you can tell which audience actually responded.
 
@@ -39,7 +84,7 @@ Free channels, in order. Each one is a separate week so you can tell which audie
 
 **Ongoing.** A changelog page, updated every ship. It costs nothing and it's the single cheapest retention tool a small product has.
 
-## 4. Qualitative signal
+## 5. Qualitative signal
 
 Numbers tell you *whether*; people tell you *why*. Both are needed.
 
@@ -49,7 +94,7 @@ Numbers tell you *whether*; people tell you *why*. Both are needed.
 
 Ten unprompted qualitative responses is the target. If you can't get ten people to say anything at all, the retention number won't matter.
 
-## 5. Decision point — day 30
+## 6. Decision point — day 30
 
 Sit down with three numbers: day-7 retention, waitlist conversion on `pro_gate_hit`, and the count of qualitative responses.
 
@@ -59,7 +104,7 @@ Sit down with three numbers: day-7 retention, waitlist conversion on `pro_gate_h
 
 Set the date now. A decision point you schedule in advance is a decision; one you make when you feel like it is a rationalization.
 
-## 6. What not to do during validation
+## 7. What not to do during validation
 
 - **Don't build payments before the retention number exists.** It's a week of work and it's also the thing that forces you onto a paid Vercel plan.
 - **Don't add features from feature requests.** Early users ask for what their last app had. Add what the retained users *do*, not what new users *say*.

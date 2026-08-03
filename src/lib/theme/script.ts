@@ -6,6 +6,7 @@
  */
 export const THEME_STORAGE_KEY = 'sukun.theme'
 export const PHASE_STORAGE_KEY = 'sukun.phase'
+export const ONBOARDED_STORAGE_KEY = 'sukun.onboarded'
 
 export const themeScript = `
 (function () {
@@ -18,6 +19,14 @@ export const themeScript = `
 
     var phase = localStorage.getItem('${PHASE_STORAGE_KEY}');
     d.setAttribute('data-phase', phase === 'short_break' || phase === 'long_break' ? phase : 'focus');
+
+    /* Onboarding is the largest element on a first visit, so deciding whether
+       to show it must not wait for hydration and an IndexedDB read — that put
+       LCP at six seconds. localStorage is synchronous and available here. The
+       component corrects itself after mount if IndexedDB disagrees. */
+    if (!localStorage.getItem('${ONBOARDED_STORAGE_KEY}')) {
+      d.setAttribute('data-onboarding', 'pending');
+    }
 
     var h = new Date().getHours();
     var tint = h >= 5 && h < 9   ? 'rgb(74 92 138 / 0.07)'

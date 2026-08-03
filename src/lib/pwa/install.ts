@@ -1,5 +1,6 @@
 'use client'
 
+import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 
 /**
@@ -31,6 +32,20 @@ export function isStandalone(): boolean {
     window.matchMedia('(display-mode: standalone)').matches ||
     // iOS Safari predates the standard and still reports it here.
     (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+  )
+}
+
+/**
+ * Read as an external store rather than mirrored into state: the server cannot
+ * know, and copying it in via an effect means a setState during mount.
+ * getServerSnapshot returns false, so the install card renders by default and
+ * disappears for anyone already installed.
+ */
+export function useIsStandalone(): boolean {
+  return useSyncExternalStore(
+    () => () => {},
+    () => isStandalone(),
+    () => false,
   )
 }
 

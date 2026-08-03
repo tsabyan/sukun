@@ -33,7 +33,10 @@ export function KeyboardShortcuts() {
     const onKey = (event: KeyboardEvent) => {
       if (event.metaKey || event.ctrlKey || event.altKey) return
       if (isTyping(event.target)) return
-      if (document.querySelector('[role="dialog"]')) return
+      // The onboarding overlay is always in the DOM, just hidden, so a bare
+      // [role="dialog"] check would disable every shortcut forever.
+      const dialogs = Array.from(document.querySelectorAll('[role="dialog"]'))
+      if (dialogs.some((el) => (el as HTMLElement).offsetParent !== null)) return
 
       switch (event.key) {
         case ' ':

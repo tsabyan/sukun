@@ -797,6 +797,54 @@ export async function joinWaitlist(email: string, source: string): Promise<void>
   })
 }
 
+/* ====================================================== device count */
+
+export const APP_VERSION = '0.1.0'
+
+/**
+ * A random id for this install. Not derived from anything — no fingerprint,
+ * no IP, no account. It identifies a browser profile, not a person, and it is
+ * the only way to count the people who use the app without ever signing in.
+ */
+export async function deviceId(): Promise<string> {
+  assertBrowser('deviceId')
+
+  const existing = await getMeta<string>(META_KEYS.deviceId)
+  if (existing) return existing
+
+  const id = newId()
+  await setMeta(META_KEYS.deviceId, id)
+  return id
+}
+
+/**
+ * Queues one heartbeat per local day — docs/10-validation.md §2.
+ *
+ * auth.users answers the wrong question: it counts people who signed up, not
+ * people who use the thing, and this app is deliberately usable without an
+ * account. One row per device per day makes guests and registered users the
+ * same funnel, and gives day-7 retention without an analytics vendor.
+ *
+ * Goes through the outbox, so a day spent offline still lands later.
+ */
+export async function recordDeviceHeartbeat(date: LocalDate = today()): Promise<void> {
+  assertBrowser('recordDeviceHeartbeat')
+
+  const already = await getMeta<string>(META_KEYS.lastHeartbeatDate)
+  if (already === date) return
+
+  const id = await deviceId()
+
+  await db.transaction('rw', [db.outbox, db.meta], async () => {
+    await enqueue('deviceDays', `${id}:${date}`, 'upsert', {
+      deviceId: id,
+      localDate: date,
+      appVersion: APP_VERSION,
+    })
+    await db.meta.put({ key: META_KEYS.lastHeartbeatDate, value: date })
+  })
+}
+
 /* ============================================================ live */
 
 /**
@@ -889,6 +937,8 @@ export const repo = {
   deleteAllData,
   getWaitlistEmail,
   joinWaitlist,
+  deviceId,
+  recordDeviceHeartbeat,
   live,
 }
 

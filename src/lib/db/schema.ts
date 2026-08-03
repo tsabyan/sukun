@@ -83,6 +83,8 @@ export const META_KEYS = {
   waitlistEmail: 'waitlistEmail',
   onboardedAt: 'onboardedAt',
   notificationsAskedAt: 'notificationsAskedAt',
+  deviceId: 'deviceId',
+  lastHeartbeatDate: 'lastHeartbeatDate',
 } as const
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {

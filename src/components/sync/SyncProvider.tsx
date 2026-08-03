@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { ensureSession, watchAuth } from '@/lib/supabase/auth'
+import { recordDeviceHeartbeat } from '@/lib/db/repo'
 import { startSync } from '@/lib/sync/engine'
 
 /**
@@ -15,10 +16,15 @@ export function SyncProvider() {
   useEffect(() => {
     const stopWatching = watchAuth()
 
-    // Started unconditionally, not gated on a session. Signed out is the
-    // normal state — the cycle then does nothing except push waitlist
-    // signups, and it is already listening when a magic link lands.
+    // Counts this device once for today, guest or not. Queued through the
+    // outbox, so it survives being offline and needs no session.
+    void recordDeviceHeartbeat()
+
     void ensureSession()
+
+    // Started unconditionally, not gated on a session. Signed out is the
+    // normal state — the cycle then pushes only the insert-only tables, and
+    // it is already listening when a magic link lands.
     const stopSync = startSync()
 
     return () => {

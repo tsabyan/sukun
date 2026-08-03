@@ -304,6 +304,50 @@ describe('waitlist', () => {
   })
 })
 
+describe('device heartbeat', () => {
+  it('queues one row per device per local day', async () => {
+    await repo.recordDeviceHeartbeat('2026-08-02')
+    await repo.recordDeviceHeartbeat('2026-08-02')
+    await repo.recordDeviceHeartbeat('2026-08-02')
+
+    const queued = await db.outbox.where('table').equals('deviceDays').toArray()
+    expect(queued).toHaveLength(1)
+
+    const payload = queued[0].payload as { deviceId: string; localDate: string }
+    expect(payload.localDate).toBe('2026-08-02')
+    expect(payload.deviceId).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('queues again on a new day, with the same device id', async () => {
+    await repo.recordDeviceHeartbeat('2026-08-02')
+    await repo.recordDeviceHeartbeat('2026-08-03')
+
+    const queued = await db.outbox.where('table').equals('deviceDays').toArray()
+    expect(queued).toHaveLength(2)
+
+    const ids = new Set(queued.map((e) => (e.payload as { deviceId: string }).deviceId))
+    expect(ids.size).toBe(1)
+  })
+
+  it('keeps the device id stable across calls', async () => {
+    const first = await repo.deviceId()
+    const second = await repo.deviceId()
+    expect(second).toBe(first)
+  })
+
+  it('carries no account or personal data', async () => {
+    await repo.recordDeviceHeartbeat('2026-08-02')
+    const [entry] = await db.outbox.where('table').equals('deviceDays').toArray()
+
+    // user_id is attached at push time from the session, never stored here
+    expect(Object.keys(entry.payload as object).sort()).toEqual([
+      'appVersion',
+      'deviceId',
+      'localDate',
+    ])
+  })
+})
+
 describe('free tier', () => {
   it('counts toward the cap only while tasks are open', async () => {
     for (let i = 0; i < repo.FREE_TASK_LIMIT; i++) {
