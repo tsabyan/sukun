@@ -799,7 +799,13 @@ export async function joinWaitlist(email: string, source: string): Promise<void>
 
 /* ====================================================== device count */
 
-export const APP_VERSION = '0.1.0'
+/**
+ * Tagged `-dev` outside production so local runs, E2E and Lighthouse cannot
+ * skew the launch metrics. The views in migration 010 filter these out; the
+ * rows stay, so a dev heartbeat is still evidence the pipeline works.
+ */
+export const APP_VERSION =
+  process.env.NODE_ENV === 'production' ? '0.1.0' : '0.1.0-dev'
 
 /**
  * A random id for this install. Not derived from anything — no fingerprint,
