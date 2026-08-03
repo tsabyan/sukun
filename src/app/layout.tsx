@@ -38,10 +38,10 @@ export const metadata: Metadata = {
     title: 'Sukun',
     statusBarStyle: 'black-translucent',
   },
-  icons: {
-    icon: [{ url: '/icons/192.png', sizes: '192x192', type: 'image/png' }],
-    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
-  },
+  // No `icons` block on purpose. Next picks up app/icon.svg, app/icon.png and
+  // app/apple-icon.png from the file convention, and an explicit block here
+  // overrides all three — which is how the tab icon ended up being a 192px PNG
+  // rendered into a 16px slot, with the scalable SVG never linked at all.
   // The app is a tool, not a page. Nothing here should be indexed as content.
   robots: { index: true, follow: true },
   formatDetection: { telephone: false, date: false, address: false, email: false },
