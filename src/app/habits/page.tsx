@@ -2,7 +2,9 @@
 
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus } from 'lucide-react'
+import Link from 'next/link'
+import { Plus, Settings } from 'lucide-react'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { Card } from '@/components/ui/Card'
 import { IconButton } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
@@ -64,7 +66,6 @@ export default function HabitsPage() {
     return (
       <HabitDetail
         habit={habit}
-        identityName={identity.name || 'Identity'}
         done={doneOf(habit.id)}
         onBack={() => setView({ identityId: identity.id })}
         onRename={(name) => void updateHabit(habit.id, { name })}
@@ -117,10 +118,18 @@ export default function HabitsPage() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex flex-col gap-1">
-        <span className="text-body-sm text-ink-3">Become yourself, one day at a time</span>
-        <h1 className="text-title-l font-display text-ink">Habits</h1>
-      </header>
+      <PageHeader
+        title="Habits"
+        actions={
+          <Link
+            href="/settings"
+            aria-label="Settings"
+            className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
+          >
+            <Settings size={20} strokeWidth={1.75} />
+          </Link>
+        }
+      />
 
       <SegmentedControl<'today' | 'identities'>
         aria-label="Habits view"

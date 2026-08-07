@@ -1,6 +1,6 @@
 import { db, assertBrowser, getMeta, META_KEYS, setMeta } from './schema'
-import { currentUserId } from './identity'
-import { ensureSettings, DEFAULT_SETTINGS } from './seed'
+import { currentUserId, ensureUserId } from './identity'
+import { ensureSettings, readSettings, DEFAULT_SETTINGS } from './seed'
 import { enqueue } from '@/lib/sync/outbox'
 import { newId } from '@/lib/utils/ids'
 import { nowIso, today } from '@/lib/utils/dates'
@@ -546,7 +546,7 @@ async function allSessions(): Promise<Session[]> {
 
 export async function getHeatmap(weeks = 12): Promise<HeatmapCell[]> {
   assertBrowser('getHeatmap')
-  const [sessions, settings] = await Promise.all([allSessions(), ensureSettings()])
+  const [sessions, settings] = await Promise.all([allSessions(), readSettings()])
   return buildHeatmap(sessions, weeks, today(), settings.weekStartsOn)
 }
 
@@ -557,7 +557,7 @@ export async function getMonthlyActivity(months = 6): Promise<MonthlyBar[]> {
 
 export async function getPersonalBests(range: Range = 'week'): Promise<PersonalBests> {
   assertBrowser('getPersonalBests')
-  const [sessions, settings] = await Promise.all([allSessions(), ensureSettings()])
+  const [sessions, settings] = await Promise.all([allSessions(), readSettings()])
   const streaks = computeStreaks(countingDaysOf(sessions))
   return buildPersonalBests(sessions, range, streaks, today(), settings.weekStartsOn)
 }
@@ -615,14 +615,40 @@ export async function evaluateAchievements(): Promise<string[]> {
 
 /* ======================================================== settings */
 
+/**
+ * Pure read — safe inside useLiveQuery. Never seeds; see seed.ts.
+ *
+ * The two reads are consecutive Dexie ops on purpose. Routing the userId
+ * lookup through currentUserId()'s cached early-return awaits a *non-Dexie*
+ * promise, and Dexie drops the `settings` table from the liveQuery observation
+ * set across that await — the query then never re-runs on a settings write and
+ * the whole screen freezes with stale values (writes land, UI never updates).
+ * Reading meta then settings directly keeps both tables observed.
+ */
 export async function getSettings(): Promise<Settings> {
   assertBrowser('getSettings')
-  return ensureSettings()
+  const meta = await db.meta.get(META_KEYS.userId)
+  const userId = typeof meta?.value === 'string' ? meta.value : 'local-device'
+  const existing = await db.settings.get(userId)
+  return existing
+    ? { ...DEFAULT_SETTINGS, ...existing, userId }
+    : { ...DEFAULT_SETTINGS, userId, createdAt: nowIso(), updatedAt: nowIso() }
+}
+
+/**
+ * Explicit one-time startup seed, outside any liveQuery. Persists the device
+ * id and the settings row in a writable context so that every subsequent
+ * liveQuery read (getSettings, stats) stays read-only and never throws.
+ */
+export async function seedSettings(): Promise<void> {
+  assertBrowser('seedSettings')
+  await ensureUserId()
+  await ensureSettings()
 }
 
 export async function updateSettings(patch: Partial<Settings>): Promise<void> {
   assertBrowser('updateSettings')
-  const current = await ensureSettings()
+  const current = await readSettings()
 
   await db.transaction('rw', [db.settings, db.outbox], async () => {
     const next: Settings = { ...current, ...patch, userId: current.userId, updatedAt: nowIso() }
@@ -1114,6 +1140,7 @@ export const repo = {
   getAchievements,
   evaluateAchievements,
   getSettings,
+  seedSettings,
   updateSettings,
   createIdentity,
   updateIdentity,

@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 
 /**
- * Finishes the magic-link exchange and sends the user back into the app.
+ * Finishes the auth code exchange — for both Google OAuth and the email magic
+ * link — and sends the user back into the app.
  *
- * Linking an email to an existing anonymous user preserves the same auth.uid(),
- * so every row created before signing in already belongs to the account. That
- * is the whole reason this app starts anonymous rather than inventing a local
- * user id: there is no data migration to get wrong.
+ * The session this creates has a real auth.uid(). Rows made as a guest carry a
+ * device-local id instead, so the first sync afterwards calls adoptUserId to
+ * rewrite them onto the account (see lib/db/identity.ts). That is the guest →
+ * registered migration; the callback itself only establishes the session.
  */
 export async function GET(request: Request) {
   const url = new URL(request.url)

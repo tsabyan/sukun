@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Flame, Trophy, X } from 'lucide-react'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { Card, SectionLabel } from '@/components/ui/Card'
 import { IconButton } from '@/components/ui/Button'
 import { Pill } from '@/components/ui/Pill'
@@ -31,15 +32,15 @@ export default function RecordsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <span className="inline-flex items-center gap-2">
-          <Trophy size={20} strokeWidth={1.75} className="text-accent" aria-hidden />
-          <h1 className="text-title-l font-display text-ink">Personal bests</h1>
-        </span>
-        <IconButton label="Close" onClick={() => router.push('/reports')}>
-          <X size={20} strokeWidth={1.75} />
-        </IconButton>
-      </header>
+      <PageHeader
+        title="Personal bests"
+        leading={<Trophy size={20} strokeWidth={1.75} className="text-accent" aria-hidden />}
+        actions={
+          <IconButton label="Close" onClick={() => router.push('/reports')}>
+            <X size={20} strokeWidth={1.75} />
+          </IconButton>
+        }
+      />
 
       <SegmentedControl<Range>
         aria-label="Range"

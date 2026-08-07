@@ -6,7 +6,7 @@ import { SettingsGroup, SettingsRow, SettingsButtonRow } from './SettingsList'
 import { Button } from '@/components/ui/Button'
 import { Field } from '@/components/ui/Field'
 import { toast } from '@/components/ui/Toast'
-import { useAuthStore, sendMagicLink, signOut } from '@/lib/supabase/auth'
+import { useAuthStore, sendMagicLink, signInWithGoogle, signOut } from '@/lib/supabase/auth'
 import { syncNow, useSyncStore } from '@/lib/sync/engine'
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -28,6 +28,18 @@ export function AccountGroup() {
   const [sending, setSending] = useState(false)
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [connecting, setConnecting] = useState(false)
+
+  const continueWithGoogle = async () => {
+    setConnecting(true)
+    setError(null)
+    const { error: failure } = await signInWithGoogle()
+    // On success the page has already redirected; only a failed start lands here.
+    if (failure) {
+      setError(failure)
+      setConnecting(false)
+    }
+  }
 
   if (state === 'unconfigured') {
     return (
@@ -109,9 +121,20 @@ export function AccountGroup() {
         <div className="flex flex-col gap-3 px-4 py-4">
           <p className="text-body text-ink">Sync across devices</p>
           <p className="text-body-sm text-ink-2">
-            Add an email to reach your tasks and history from anywhere else. No password,
-            and nothing you have already done is lost.
+            Sign in to reach your tasks, habits and history from anywhere else. Everything
+            you have done so far as a guest comes with you — nothing is lost.
           </p>
+
+          <Button variant="primary" disabled={connecting} onClick={() => void continueWithGoogle()}>
+            {connecting ? 'Redirecting…' : 'Continue with Google'}
+          </Button>
+
+          <div className="flex items-center gap-3 py-1" aria-hidden>
+            <span className="h-px flex-1 bg-hairline" />
+            <span className="text-body-sm text-ink-3">or</span>
+            <span className="h-px flex-1 bg-hairline" />
+          </div>
+
           <Field
             label="Email"
             type="email"
@@ -128,8 +151,8 @@ export function AccountGroup() {
               if (e.key === 'Enter') void submit()
             }}
           />
-          <Button variant="primary" disabled={sending} onClick={() => void submit()}>
-            Send sign-in link
+          <Button variant="secondary" disabled={sending} onClick={() => void submit()}>
+            Send email sign-in link
           </Button>
         </div>
       )}

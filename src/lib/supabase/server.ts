@@ -3,7 +3,8 @@ import { cookies } from 'next/headers'
 import { DB_SCHEMA } from './client'
 
 /**
- * Server client, used by the magic-link callback and nothing else.
+ * Server client, used by the auth callback (Google OAuth + magic link) and
+ * nothing else.
  *
  * The browser client from @supabase/ssr keeps the session — and the PKCE
  * verifier — in cookies, which is what lets this route finish the exchange the

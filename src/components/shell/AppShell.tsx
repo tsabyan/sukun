@@ -46,7 +46,7 @@ function TabBar({ pathname }: { pathname: string }) {
   return (
     <nav
       aria-label="Primary"
-      className="material fixed inset-x-0 bottom-0 z-30 border-t border-hairline lg:hidden"
+      className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-surface lg:hidden"
       style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
     >
       <ul className="mx-auto flex h-14 max-w-[520px] items-stretch">

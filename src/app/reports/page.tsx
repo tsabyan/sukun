@@ -4,6 +4,7 @@ import { createElement, useState } from 'react'
 import Link from 'next/link'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronRight, Lock, Settings, Trophy } from 'lucide-react'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { Card, SectionLabel } from '@/components/ui/Card'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Sheet } from '@/components/ui/Sheet'
@@ -45,25 +46,27 @@ export default function ReportsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-title-l font-display text-ink">Report</h1>
-        <div className="flex items-center gap-1">
-          <Link
-            href="/records"
-            aria-label="Personal bests"
-            className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
-          >
-            <Trophy size={20} strokeWidth={1.75} />
-          </Link>
-          <Link
-            href="/settings"
-            aria-label="Settings"
-            className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
-          >
-            <Settings size={20} strokeWidth={1.75} />
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Report"
+        actions={
+          <>
+            <Link
+              href="/records"
+              aria-label="Personal bests"
+              className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
+            >
+              <Trophy size={20} strokeWidth={1.75} />
+            </Link>
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
+            >
+              <Settings size={20} strokeWidth={1.75} />
+            </Link>
+          </>
+        }
+      />
 
       <button type="button" onClick={() => setAchievementsOpen(true)} className="text-left">
         <Card interactive padding="compact" className="flex items-center gap-4">

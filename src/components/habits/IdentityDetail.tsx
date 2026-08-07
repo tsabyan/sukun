@@ -48,7 +48,7 @@ export function IdentityDetail({
         onClick={onBack}
         className="inline-flex items-center gap-1.5 self-start text-body-sm text-ink-2 hover:text-ink"
       >
-        <ArrowLeft size={15} strokeWidth={1.75} /> All identities
+        <ArrowLeft size={15} strokeWidth={1.75} /> Back
       </button>
 
       <div className="flex flex-col gap-1">

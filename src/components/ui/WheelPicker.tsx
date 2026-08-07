@@ -67,7 +67,7 @@ export function WheelPickerSheet({
         {/* the selected row sits in this band */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-1/2 -translate-y-1/2 rounded-md bg-surface-sunken"
+          className="pointer-events-none absolute inset-x-0 top-1/2 z-0 -translate-y-1/2 rounded-md bg-surface-sunken"
           style={{ height: ROW }}
         />
 
@@ -77,7 +77,7 @@ export function WheelPickerSheet({
           role="listbox"
           aria-label={title}
           tabIndex={0}
-          className="h-full snap-y snap-mandatory overflow-y-auto"
+          className="relative z-10 h-full snap-y snap-mandatory overflow-y-auto"
           style={{ scrollbarWidth: 'none', paddingBlock: (HEIGHT - ROW) / 2 }}
         >
           {values.map((option) => (
