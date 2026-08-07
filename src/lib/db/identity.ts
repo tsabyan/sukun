@@ -35,7 +35,7 @@ export async function adoptUserId(nextUserId: string) {
 
   await db.transaction(
     'rw',
-    [db.tasks, db.subtasks, db.tags, db.taskTags, db.sessions, db.achievements, db.settings, db.meta],
+    [db.tasks, db.subtasks, db.tags, db.taskTags, db.sessions, db.achievements, db.identities, db.habits, db.habitLogs, db.settings, db.meta],
     async () => {
       // Unrolled rather than looped: the tables have different row types, so a
       // loop collapses them to a union and `modify` stops being callable.
@@ -45,6 +45,9 @@ export async function adoptUserId(nextUserId: string) {
       await db.taskTags.toCollection().modify({ userId: nextUserId })
       await db.sessions.toCollection().modify({ userId: nextUserId })
       await db.achievements.toCollection().modify({ userId: nextUserId })
+      await db.identities.toCollection().modify({ userId: nextUserId })
+      await db.habits.toCollection().modify({ userId: nextUserId })
+      await db.habitLogs.toCollection().modify({ userId: nextUserId })
 
       const settings = await db.settings.get(previous)
       if (settings) {

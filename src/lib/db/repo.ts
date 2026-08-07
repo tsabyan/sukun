@@ -20,7 +20,10 @@ import type {
   CreateTaskInput,
   DayStats,
   ExportBundle,
+  Habit,
+  HabitLog,
   HeatmapCell,
+  Identity,
   LocalDate,
   PersonalBests,
   Session,
@@ -734,6 +737,9 @@ export async function deleteAllData(): Promise<void> {
       db.sessions,
       db.achievements,
       db.settings,
+      db.identities,
+      db.habits,
+      db.habitLogs,
       db.outbox,
       db.meta,
     ],
@@ -746,6 +752,9 @@ export async function deleteAllData(): Promise<void> {
         db.sessions.clear(),
         db.achievements.clear(),
         db.settings.clear(),
+        db.identities.clear(),
+        db.habits.clear(),
+        db.habitLogs.clear(),
         db.outbox.clear(),
       ])
       await db.meta.where('key').notEqual(META_KEYS.userId).delete()
@@ -760,6 +769,147 @@ export async function deleteAllData(): Promise<void> {
     createdAt: nowIso(),
     updatedAt: nowIso(),
   })
+}
+
+/* ========================================================== habits */
+
+const ALL_WEEKDAYS = [0, 1, 2, 3, 4, 5, 6]
+
+export async function createIdentity(name: string): Promise<Identity> {
+  assertBrowser('createIdentity')
+  const userId = await currentUserId()
+  const now = nowIso()
+  const identity: Identity = {
+    id: newId(),
+    userId,
+    name: name.trim(),
+    position: await db.identities.count(),
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+  }
+  await db.transaction('rw', [db.identities, db.outbox], async () => {
+    await db.identities.put(identity)
+    await enqueue('identities', identity.id, 'upsert', identity)
+  })
+  return identity
+}
+
+export async function updateIdentity(id: string, patch: Partial<Identity>): Promise<void> {
+  assertBrowser('updateIdentity')
+  await db.transaction('rw', [db.identities, db.outbox], async () => {
+    const existing = await db.identities.get(id)
+    if (!existing) throw new Error(`No identity ${id}`)
+    const next: Identity = { ...existing, ...patch, id, updatedAt: nowIso() }
+    await db.identities.put(next)
+    await enqueue('identities', id, 'upsert', next)
+  })
+}
+
+/** Soft-delete an identity and, with it, every habit and log beneath it. */
+export async function deleteIdentity(id: string): Promise<void> {
+  assertBrowser('deleteIdentity')
+  const now = nowIso()
+  await db.transaction('rw', [db.identities, db.habits, db.habitLogs, db.outbox], async () => {
+    const identity = await db.identities.get(id)
+    if (!identity) return
+    await db.identities.put({ ...identity, deletedAt: now, updatedAt: now })
+    await enqueue('identities', id, 'upsert', { ...identity, deletedAt: now, updatedAt: now })
+
+    const habits = await db.habits.where('identityId').equals(id).toArray()
+    for (const habit of habits.filter(alive)) {
+      await db.habits.put({ ...habit, deletedAt: now, updatedAt: now })
+      await enqueue('habits', habit.id, 'upsert', { ...habit, deletedAt: now, updatedAt: now })
+      const logs = await db.habitLogs.where('habitId').equals(habit.id).toArray()
+      for (const log of logs.filter(alive)) {
+        const next: HabitLog = { ...log, deletedAt: now, updatedAt: now }
+        await db.habitLogs.put(next)
+        await enqueue('habitLogs', `${log.habitId}:${log.day}`, 'upsert', next)
+      }
+    }
+  })
+}
+
+export async function createHabit(
+  identityId: string,
+  name: string,
+  schedule: number[] = ALL_WEEKDAYS,
+): Promise<Habit> {
+  assertBrowser('createHabit')
+  const userId = await currentUserId()
+  const now = nowIso()
+  const habit: Habit = {
+    id: newId(),
+    userId,
+    identityId,
+    name: name.trim(),
+    schedule: schedule.length ? schedule : ALL_WEEKDAYS,
+    position: await db.habits.where('identityId').equals(identityId).count(),
+    createdAt: now,
+    updatedAt: now,
+    deletedAt: null,
+  }
+  await db.transaction('rw', [db.habits, db.outbox], async () => {
+    await db.habits.put(habit)
+    await enqueue('habits', habit.id, 'upsert', habit)
+  })
+  return habit
+}
+
+export async function updateHabit(id: string, patch: Partial<Habit>): Promise<void> {
+  assertBrowser('updateHabit')
+  await db.transaction('rw', [db.habits, db.outbox], async () => {
+    const existing = await db.habits.get(id)
+    if (!existing) throw new Error(`No habit ${id}`)
+    const next: Habit = { ...existing, ...patch, id, updatedAt: nowIso() }
+    await db.habits.put(next)
+    await enqueue('habits', id, 'upsert', next)
+  })
+}
+
+export async function deleteHabit(id: string): Promise<void> {
+  assertBrowser('deleteHabit')
+  const now = nowIso()
+  await db.transaction('rw', [db.habits, db.habitLogs, db.outbox], async () => {
+    const habit = await db.habits.get(id)
+    if (!habit) return
+    await db.habits.put({ ...habit, deletedAt: now, updatedAt: now })
+    await enqueue('habits', id, 'upsert', { ...habit, deletedAt: now, updatedAt: now })
+    const logs = await db.habitLogs.where('habitId').equals(id).toArray()
+    for (const log of logs.filter(alive)) {
+      const next: HabitLog = { ...log, deletedAt: now, updatedAt: now }
+      await db.habitLogs.put(next)
+      await enqueue('habitLogs', `${log.habitId}:${log.day}`, 'upsert', next)
+    }
+  })
+}
+
+/**
+ * Flip a habit's done-state for one day. Toggling off soft-deletes the log so
+ * the change still syncs. Returns the resulting state (true = now done).
+ */
+export async function toggleHabitDay(habitId: string, day: LocalDate): Promise<boolean> {
+  assertBrowser('toggleHabitDay')
+  const userId = await currentUserId()
+  const now = nowIso()
+  let done = false
+  await db.transaction('rw', [db.habitLogs, db.outbox], async () => {
+    const existing = await db.habitLogs.get([habitId, day])
+    if (existing && existing.deletedAt === null) {
+      const next: HabitLog = { ...existing, deletedAt: now, updatedAt: now }
+      await db.habitLogs.put(next)
+      await enqueue('habitLogs', `${habitId}:${day}`, 'upsert', next)
+      done = false
+    } else {
+      const next: HabitLog = existing
+        ? { ...existing, deletedAt: null, updatedAt: now }
+        : { habitId, userId, day, createdAt: now, updatedAt: now, deletedAt: null }
+      await db.habitLogs.put(next)
+      await enqueue('habitLogs', `${habitId}:${day}`, 'upsert', next)
+      done = true
+    }
+  })
+  return done
 }
 
 /* ======================================================== waitlist */
@@ -898,7 +1048,34 @@ export const live = {
   },
 
   outboxCount: () => db.outbox.count(),
+
+  /* ---- habits ---- */
+
+  identities: () =>
+    db.identities.filter(alive).toArray().then((xs) => xs.sort(byPosition)),
+
+  habits: () =>
+    db.habits.filter(alive).toArray().then((xs) => xs.sort(byPosition)),
+
+  habitsOf: (identityId: string) =>
+    db.habits
+      .where('identityId')
+      .equals(identityId)
+      .filter(alive)
+      .toArray()
+      .then((xs) => xs.sort(byPosition)),
+
+  /** Every live log, as done-day sets keyed by habit id — feeds the streak maths. */
+  habitLogs: async (): Promise<Record<string, Set<LocalDate>>> => {
+    const rows = await db.habitLogs.filter(alive).toArray()
+    const map: Record<string, Set<LocalDate>> = {}
+    for (const row of rows) (map[row.habitId] ??= new Set()).add(row.day)
+    return map
+  },
 }
+
+const byPosition = <T extends { position: number; createdAt: string }>(a: T, b: T) =>
+  a.position - b.position || a.createdAt.localeCompare(b.createdAt)
 
 /** Namespace object matching the Repo interface in docs/06 §3. */
 export const repo = {
@@ -938,6 +1115,13 @@ export const repo = {
   evaluateAchievements,
   getSettings,
   updateSettings,
+  createIdentity,
+  updateIdentity,
+  deleteIdentity,
+  createHabit,
+  updateHabit,
+  deleteHabit,
+  toggleHabitDay,
   exportAll,
   importAll,
   deleteAllData,

@@ -1,6 +1,9 @@
 import Dexie, { type EntityTable, type Table } from 'dexie'
 import type {
   Achievement,
+  Habit,
+  HabitLog,
+  Identity,
   MetaEntry,
   OutboxEntry,
   Session,
@@ -35,6 +38,10 @@ export class SukunDB extends Dexie {
   sessions!: EntityTable<Session, 'id'>
   achievements!: EntityTable<Achievement, 'key'>
   settings!: EntityTable<Settings, 'userId'>
+  identities!: EntityTable<Identity, 'id'>
+  habits!: EntityTable<Habit, 'id'>
+  /** compound primary key [habitId+day], so not an EntityTable */
+  habitLogs!: Table<HabitLog, [string, string]>
   outbox!: EntityTable<OutboxEntry, 'id'>
   meta!: EntityTable<MetaEntry, 'key'>
 
@@ -52,6 +59,15 @@ export class SukunDB extends Dexie {
       // local only — never synced
       outbox: 'id, table, createdAt',
       meta: 'key',
+    })
+
+    // v2 — habits. Existing stores carry over untouched; only the new tables
+    // are declared. `deletedAt` is not indexed here for the same reason as the
+    // v1 stores: IndexedDB cannot index null, so the alive filter runs in JS.
+    this.version(2).stores({
+      identities: 'id, position, updatedAt',
+      habits: 'id, identityId, position, updatedAt',
+      habitLogs: '[habitId+day], habitId, day, updatedAt',
     })
   }
 }

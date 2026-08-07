@@ -169,6 +169,8 @@ const LOCAL_TABLE = {
   settings: () => db.settings,
   achievements: () => db.achievements,
   taskTags: () => db.taskTags,
+  identities: () => db.identities,
+  habits: () => db.habits,
 } as const
 
 async function pullTable(table: SyncTable): Promise<number> {
@@ -192,7 +194,7 @@ async function pullTable(table: SyncTable): Promise<number> {
 
   let newest = since
 
-  await db.transaction('rw', [db.tasks, db.subtasks, db.tags, db.taskTags, db.sessions, db.settings, db.achievements, db.outbox], async () => {
+  await db.transaction('rw', [db.tasks, db.subtasks, db.tags, db.taskTags, db.sessions, db.settings, db.achievements, db.identities, db.habits, db.habitLogs, db.outbox], async () => {
     const queued = new Set((await db.outbox.toArray()).map((e) => `${e.table}:${e.rowId}`))
 
     for (const raw of data) {
@@ -207,19 +209,32 @@ async function pullTable(table: SyncTable): Promise<number> {
             ? (row.key as string)
             : table === 'taskTags'
               ? `${row.taskId}:${row.tagId}`
-              : (row.id as string)
+              : table === 'habitLogs'
+                ? `${row.habitId}:${row.day}`
+                : (row.id as string)
 
       // Last-write-wins on updatedAt, except that a row with something still
       // queued locally keeps the local copy — that is the user's most recent
       // intent, on the device they are holding.
       if (queued.has(`${table}:${key}`)) continue
 
-      const store = LOCAL_TABLE[table as keyof typeof LOCAL_TABLE]()
       if (table === 'taskTags') {
         await db.taskTags.put(row as never)
         continue
       }
 
+      // habit_logs has a compound primary key [habitId+day], so it cannot go
+      // through the id-keyed store map — but it does carry updated_at, so it
+      // still gets last-write-wins rather than the pulled-whole treatment.
+      if (table === 'habitLogs') {
+        const composite: [string, string] = [row.habitId as string, row.day as string]
+        const current = await db.habitLogs.get(composite)
+        if (current?.updatedAt && current.updatedAt >= updatedAt) continue
+        await db.habitLogs.put(row as never)
+        continue
+      }
+
+      const store = LOCAL_TABLE[table as keyof typeof LOCAL_TABLE]()
       const existing = await (store as { get: (k: string) => Promise<unknown> }).get(key)
       const existingUpdatedAt = (existing as { updatedAt?: string } | undefined)?.updatedAt
       if (existingUpdatedAt && existingUpdatedAt >= updatedAt) continue
