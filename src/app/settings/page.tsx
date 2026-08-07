@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft } from 'lucide-react'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { SettingsGroup, SettingsRow, SettingsButtonRow } from '@/components/settings/SettingsList'
 import { AccountGroup } from '@/components/settings/AccountGroup'
 import { WheelPickerSheet } from '@/components/ui/WheelPicker'
@@ -82,12 +83,14 @@ export default function SettingsPage() {
 
   return (
     <div className="flex flex-col gap-6">
-      <header className="flex items-center gap-2">
-        <IconButton label="Back" onClick={() => router.back()}>
-          <ChevronLeft size={22} strokeWidth={1.75} />
-        </IconButton>
-        <h1 className="text-title-l font-display text-ink">Settings</h1>
-      </header>
+      <PageHeader
+        title="Settings"
+        leading={
+          <IconButton label="Back" onClick={() => router.back()}>
+            <ChevronLeft size={22} strokeWidth={1.75} />
+          </IconButton>
+        }
+      />
 
       <SettingsGroup title="Timer">
         <SettingsButtonRow

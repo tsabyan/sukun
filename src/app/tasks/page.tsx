@@ -12,6 +12,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ChipButton, Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { toast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/shell/PageHeader'
 import { TaskCard } from '@/components/tasks/TaskCard'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { UpsellSheet } from '@/components/tasks/UpsellSheet'
@@ -130,24 +131,26 @@ function TasksScreen() {
 
   return (
     <div className="flex flex-col gap-5">
-      <header className="flex items-center justify-between">
-        <h1 className="text-title-l font-display text-ink">Tasks</h1>
-        <div className="flex items-center gap-1">
-          <IconButton label="Sort tasks" onClick={() => setSortOpen((v) => !v)}>
-            <ArrowDownUp size={20} strokeWidth={1.75} />
-          </IconButton>
-          <IconButton label="Add task" variant="primary" size={40} onClick={openCreate}>
-            <Plus size={20} strokeWidth={2} />
-          </IconButton>
-          <Link
-            href="/settings"
-            aria-label="Settings"
-            className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
-          >
-            <Settings size={20} strokeWidth={1.75} />
-          </Link>
-        </div>
-      </header>
+      <PageHeader
+        title="Tasks"
+        actions={
+          <>
+            <IconButton label="Sort tasks" onClick={() => setSortOpen((v) => !v)}>
+              <ArrowDownUp size={20} strokeWidth={1.75} />
+            </IconButton>
+            <IconButton label="Add task" variant="primary" size={40} onClick={openCreate}>
+              <Plus size={20} strokeWidth={2} />
+            </IconButton>
+            <Link
+              href="/settings"
+              aria-label="Settings"
+              className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
+            >
+              <Settings size={20} strokeWidth={1.75} />
+            </Link>
+          </>
+        }
+      />
 
       <SegmentedControl<TaskStatus>
         aria-label="Task filter"

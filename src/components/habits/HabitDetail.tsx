@@ -22,7 +22,6 @@ import type { Habit, LocalDate } from '@/lib/db/types'
 
 export function HabitDetail({
   habit,
-  identityName,
   done,
   onBack,
   onRename,
@@ -31,7 +30,6 @@ export function HabitDetail({
   onDelete,
 }: {
   habit: Habit
-  identityName: string
   done: DoneSet
   onBack: () => void
   onRename: (name: string) => void
@@ -60,7 +58,7 @@ export function HabitDetail({
         onClick={onBack}
         className="inline-flex items-center gap-1.5 self-start text-body-sm text-ink-2 hover:text-ink"
       >
-        <ArrowLeft size={15} strokeWidth={1.75} /> {identityName}
+        <ArrowLeft size={15} strokeWidth={1.75} /> Back
       </button>
 
       <input
