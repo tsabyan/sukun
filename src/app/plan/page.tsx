@@ -16,22 +16,14 @@ import {
   type DragStartEvent,
 } from '@dnd-kit/core'
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
-import { ChevronLeft, ChevronRight, X, Zap } from 'lucide-react'
+import { ChevronLeft, ChevronRight, X } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { Button, IconButton } from '@/components/ui/Button'
-import { toast } from '@/components/ui/Toast'
+import { IconButton } from '@/components/ui/Button'
 import { BlockSection } from '@/components/planner/BlockSection'
 import { PlannerRow } from '@/components/planner/PlannerRow'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { BLOCKS } from '@/lib/planner/autoplan'
-import {
-  autoPlan,
-  completeTask,
-  listPlanned,
-  reopenTask,
-  setPlacement,
-  undoAutoPlan,
-} from '@/lib/db/repo'
+import { completeTask, listPlanned, reopenTask, setPlacement } from '@/lib/db/repo'
 import { addDays, fromLocalDate, today } from '@/lib/utils/dates'
 import type { DayBlock, Task } from '@/lib/db/types'
 
@@ -49,7 +41,6 @@ export default function PlanPage() {
   const [date, setDate] = useState(today())
   const [dragging, setDragging] = useState<Task | null>(null)
   const [addTo, setAddTo] = useState<DayBlock | null>(null)
-  const [planning, setPlanning] = useState(false)
 
   const planned = useLiveQuery(() => listPlanned(date), [date])
 
@@ -75,27 +66,6 @@ export default function PlanPage() {
       return
     }
     await completeTask(task.id)
-  }
-
-  const handleAutoPlan = async () => {
-    setPlanning(true)
-    try {
-      const { placed, overflow } = await autoPlan(date)
-
-      const message =
-        placed === 0
-          ? 'Nothing left to plan'
-          : overflow > 0
-            ? `${placed} planned · ${overflow} didn't fit`
-            : `${placed} tasks planned`
-
-      toast(message, {
-        action: { label: 'Undo', onPress: () => void undoAutoPlan() },
-        durationMs: 6000,
-      })
-    } finally {
-      setPlanning(false)
-    }
   }
 
   const handleDragStart = (event: DragStartEvent) => {
@@ -125,8 +95,8 @@ export default function PlanPage() {
     const ordered = [...siblings]
     ordered.splice(insertAt, 0, moved)
 
-    // Moving a task by hand pins it: Auto-plan will fill around it from now
-    // on, which is what makes the button safe to press again.
+    // Moving a task by hand pins it in place so a later reorder treats it as
+    // a fixed point rather than shuffling it again.
     await Promise.all(
       ordered.map((task, index) =>
         setPlacement(task.id, targetBlock, index, task.id === moved.id || task.plannedManually, date),
@@ -174,27 +144,13 @@ export default function PlanPage() {
             <ChevronRight size={18} strokeWidth={1.75} />
           </IconButton>
         </div>
-
-        <Button
-          variant="primary"
-          size="sm"
-          disabled={planning}
-          onClick={() => void handleAutoPlan()}
-        >
-          <Zap size={16} strokeWidth={2} />
-          Auto-plan
-        </Button>
       </header>
 
       {tasks.length === 0 ? (
         <Card className="flex flex-col items-start gap-4">
           <p className="text-body text-ink-2">
-            Nothing planned yet. Auto-plan will spread your open tasks across the day.
+            Nothing planned yet. Add tasks to a block below to shape your day.
           </p>
-          <Button variant="primary" onClick={() => void handleAutoPlan()}>
-            <Zap size={16} strokeWidth={2} />
-            Auto-plan
-          </Button>
         </Card>
       ) : (
         <Card padding="compact" className="flex flex-col gap-2">

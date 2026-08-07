@@ -24,7 +24,6 @@ const PRO_FEATURES = [
   'Sync across your devices',
   'Custom themes',
   'Export your data',
-  'AI subtask breakdown',
 ]
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
