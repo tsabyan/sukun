@@ -3,6 +3,7 @@ import {
   CalendarDays,
   ListTodo,
   Settings,
+  Sprout,
   Timer,
   Trophy,
   type LucideIcon,
@@ -19,6 +20,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: '/', label: 'Timer', icon: Timer },
   { href: '/plan', label: 'Plan', icon: CalendarDays },
   { href: '/tasks', label: 'Tasks', icon: ListTodo },
+  { href: '/habits', label: 'Habits', icon: Sprout },
   { href: '/reports', label: 'Report', icon: BarChart3 },
 ]
 

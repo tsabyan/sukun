@@ -1,5 +1,8 @@
 import type {
   Achievement,
+  Habit,
+  HabitLog,
+  Identity,
   Session,
   Settings,
   Subtask,
@@ -53,6 +56,9 @@ export const fromRemoteTaskTag = (row: Row) => fromRemote<TaskTag>(row)
 export const fromRemoteSession = (row: Row) => fromRemote<Session>(row)
 export const fromRemoteSettings = (row: Row) => fromRemote<Settings>(row)
 export const fromRemoteAchievement = (row: Row) => fromRemote<Achievement>(row)
+export const fromRemoteIdentity = (row: Row) => fromRemote<Identity>(row)
+export const fromRemoteHabit = (row: Row) => fromRemote<Habit>(row)
+export const fromRemoteHabitLog = (row: Row) => fromRemote<HabitLog>(row)
 
 /** Postgres table names, which differ from the local ones only in case. */
 export const REMOTE_TABLE: Record<SyncTable, string> = {
@@ -63,6 +69,9 @@ export const REMOTE_TABLE: Record<SyncTable, string> = {
   taskTags: 'task_tags',
   settings: 'settings',
   achievements: 'achievements',
+  identities: 'identities',
+  habits: 'habits',
+  habitLogs: 'habit_logs',
   waitlist: 'waitlist',
   deviceDays: 'device_days',
 }
@@ -82,6 +91,9 @@ export const CONFLICT_TARGET: Record<Exclude<SyncTable, 'waitlist' | 'deviceDays
   taskTags: 'task_id,tag_id',
   settings: 'user_id',
   achievements: 'user_id,key',
+  identities: 'id',
+  habits: 'id',
+  habitLogs: 'habit_id,day',
 }
 
 /** Tables the pull step walks, in dependency order. */
@@ -93,4 +105,8 @@ export const PULL_TABLES: SyncTable[] = [
   'taskTags',
   'sessions',
   'achievements',
+  // identities before habits before logs — foreign keys point up the chain
+  'identities',
+  'habits',
+  'habitLogs',
 ]

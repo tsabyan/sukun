@@ -138,6 +138,46 @@ export interface Achievement {
   unlockedAt: Timestamp
 }
 
+/* -------------------------------------------------------------- habits */
+
+/** "Who you want to become" — the parent of a set of habits. */
+export interface Identity {
+  id: string
+  userId: string
+  name: string
+  position: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  deletedAt: Timestamp | null
+}
+
+export interface Habit {
+  id: string
+  userId: string
+  identityId: string
+  name: string
+  /** 0 = Sunday … 6 = Saturday. Weekdays the habit is scheduled. */
+  schedule: number[]
+  position: number
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  deletedAt: Timestamp | null
+}
+
+/**
+ * One row per (habit, day) the habit was marked done. Toggling a day off soft-
+ * deletes the row rather than removing it, so the untoggle still syncs.
+ * Compound primary key [habitId+day] — there is no surrogate id.
+ */
+export interface HabitLog {
+  habitId: string
+  userId: string
+  day: LocalDate
+  createdAt: Timestamp
+  updatedAt: Timestamp
+  deletedAt: Timestamp | null
+}
+
 /* ------------------------------------------------------------------ inputs */
 
 export interface CreateTaskInput {
@@ -208,6 +248,9 @@ export type SyncTable =
   | 'taskTags'
   | 'settings'
   | 'achievements'
+  | 'identities'
+  | 'habits'
+  | 'habitLogs'
   /** both insert-only; read from the Supabase dashboard, never from the app */
   | 'waitlist'
   | 'deviceDays'
