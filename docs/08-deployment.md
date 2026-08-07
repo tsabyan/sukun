@@ -50,10 +50,45 @@ supabase db push
 |---------|-------|
 | Settings → API → **Exposed schemas** | **Add `sukun`** alongside whatever is already there. Nothing works until this is set. |
 | Authentication → Providers → **Anonymous sign-ins** | **Disabled.** The app never uses it — signed out means no session at all, and the client runs on IndexedDB. Leaving it on is an open door with nothing behind it. |
-| Authentication → Providers → Email | Enabled, **Confirm email on**, magic link only |
+| Authentication → Providers → **Google** | **Enabled.** The primary sign-in. Needs a Client ID + Secret from Google Cloud — see below. |
+| Authentication → Providers → Email | Enabled, **Confirm email on**, magic link only. The secondary "or" option under Google. |
 | Authentication → URL Configuration → Site URL | your production URL |
 | Redirect URLs | `https://yourdomain.com/auth/callback`, `http://localhost:3000/auth/callback` |
 | Authentication → Rate limits | Leave defaults. Anonymous sign-ins are rate-limited per IP — that's a feature. |
+
+### Google OAuth
+
+Google is the primary way in; magic link is the fallback. Both land on the same
+`/auth/callback`, which exchanges the code for a session. A guest's local rows
+adopt onto the account on the first sync after sign-in (`lib/db/identity.ts`), so
+nothing made as a guest is lost — there is no separate migration step to run.
+
+The provider needs credentials from Google, wired into Supabase. Done once:
+
+1. **Google Cloud Console** → *APIs & Services*:
+   - **OAuth consent screen** — External, add app name, support email, and your
+     domain under Authorized domains. Publish it (Testing mode only lets
+     allow-listed emails in).
+   - **Credentials → Create credentials → OAuth client ID → Web application**.
+     - *Authorized JavaScript origins:* `https://yourdomain.com`, `http://localhost:3000`
+     - *Authorized redirect URI* — this is Supabase's callback, **not** the app's:
+       ```
+       https://<your-project-ref>.supabase.co/auth/v1/callback
+       ```
+   - Copy the **Client ID** and **Client secret**.
+
+2. **Supabase** → Authentication → Providers → **Google** → enable, paste the
+   Client ID and secret, save.
+
+3. **Supabase** → Authentication → URL Configuration → confirm the app callbacks
+   (`https://yourdomain.com/auth/callback` and `http://localhost:3000/auth/callback`)
+   are in the redirect allow-list. These are the two callbacks in play:
+   Google → Supabase's `/auth/v1/callback`, then Supabase → the app's
+   `/auth/callback`.
+
+Until all three are done the button redirects and Google rejects it with
+`redirect_uri_mismatch` or `access_denied`. Nothing in the repo changes — it is
+pure dashboard config.
 
 ### Checking it from the shell
 
@@ -224,7 +259,8 @@ Track *events*, never task titles or notes. A productivity app that ships user c
 
 ```
 □ RLS verified with two real users, by hand
-□ Anonymous sign-in enabled and tested in a fresh incognito window
+□ Guest mode works in a fresh incognito window — no sign-in, data persists locally
+□ Google sign-in completes, and guest data adopts onto the account (check a row's user_id)
 □ Magic link works from a phone, not just localhost
 □ Keep-alive cron returns 200 (Vercel + GitHub Action)
 □ Lighthouse: A11y 100, Best Practices 100, SEO 100, PWA installable

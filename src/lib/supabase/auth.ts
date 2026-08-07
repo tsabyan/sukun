@@ -74,7 +74,28 @@ export function watchAuth(): () => void {
   return () => data.subscription.unsubscribe()
 }
 
-/** Magic link — the only way in. No passwords to store, forget, or leak. */
+/**
+ * Google OAuth — the primary way in. Redirects the whole page to Google and
+ * returns to /auth/callback with a code, which the callback exchanges for a
+ * session exactly like the magic link. Guest data adopts on the first sync
+ * after that, so nothing created as a guest is lost.
+ *
+ * Resolves only if *starting* the redirect fails; on success the browser has
+ * already navigated away.
+ */
+export async function signInWithGoogle(): Promise<{ error: string | null }> {
+  const supabase = getSupabase()
+  if (!supabase) return { error: 'Sync is not configured on this build.' }
+
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: { redirectTo: `${siteUrl()}/auth/callback?next=/settings` },
+  })
+
+  return { error: error?.message ?? null }
+}
+
+/** Magic link — the passwordless email alternative to Google. */
 export async function sendMagicLink(email: string): Promise<{ error: string | null }> {
   const supabase = getSupabase()
   if (!supabase) return { error: 'Sync is not configured on this build.' }
