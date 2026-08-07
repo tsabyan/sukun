@@ -371,11 +371,14 @@ describe('settings', () => {
     delete legacy.hapticsEnabled
     await db.settings.put(legacy as never)
 
+    // getSettings is a pure read now (it must never write inside a liveQuery),
+    // so it backfills the value in the returned object without touching the row.
     const read = await repo.getSettings()
     expect(read.hapticsEnabled).toBe(true)
     expect(read.focusMinutes).toBe(settings.focusMinutes)
 
-    // and the backfill is persisted, not recomputed on every read
+    // Persisting the backfill is the seed path's job, not a side effect of reads.
+    await repo.seedSettings()
     const stored = await db.settings.get(settings.userId)
     expect(stored!.hapticsEnabled).toBe(true)
   })

@@ -22,11 +22,25 @@ export const DEFAULT_SETTINGS: Omit<Settings, 'userId' | 'createdAt' | 'updatedA
 }
 
 /**
- * Creates the settings row on first run. Safe to call repeatedly.
+ * Read settings without ever writing — safe inside a Dexie liveQuery.
  *
- * Defaults are merged over whatever is stored, so a field added in a later
- * release reads sensibly on a row written before it existed. IndexedDB has no
- * column migration to hang that off.
+ * `useLiveQuery` runs its querier in a read-only transaction, so a write here
+ * throws `ReadOnlyError` and takes the whole screen down via the error
+ * boundary. Reads therefore go through this; only mutations and the one-time
+ * startup seed call `ensureSettings`. Defaults are merged over whatever is
+ * stored so a field added in a later release still reads sensibly.
+ */
+export async function readSettings(): Promise<Settings> {
+  const userId = await currentUserId()
+  const existing = await db.settings.get(userId)
+  if (existing) return { ...DEFAULT_SETTINGS, ...existing, userId }
+  const now = nowIso()
+  return { ...DEFAULT_SETTINGS, userId, createdAt: now, updatedAt: now }
+}
+
+/**
+ * Creates the settings row on first run. Safe to call repeatedly, but it
+ * WRITES — never call it from inside a liveQuery. Use `readSettings` there.
  */
 export async function ensureSettings(): Promise<Settings> {
   const userId = await currentUserId()

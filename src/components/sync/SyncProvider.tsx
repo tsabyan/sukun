@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { ensureSession, watchAuth } from '@/lib/supabase/auth'
-import { recordDeviceHeartbeat } from '@/lib/db/repo'
+import { recordDeviceHeartbeat, seedSettings } from '@/lib/db/repo'
 import { startSync } from '@/lib/sync/engine'
 
 /**
@@ -15,6 +15,11 @@ import { startSync } from '@/lib/sync/engine'
 export function SyncProvider() {
   useEffect(() => {
     const stopWatching = watchAuth()
+
+    // Persist the settings row once, here in a normal (writable) context —
+    // reads go through the pure getSettings, which never seeds, so a live
+    // query can never trip a ReadOnlyError.
+    void seedSettings()
 
     // Counts this device once for today, guest or not. Queued through the
     // outbox, so it survives being offline and needs no session.

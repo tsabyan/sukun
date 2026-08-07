@@ -22,10 +22,27 @@ export async function currentUserId(): Promise<string> {
     return cached
   }
 
-  const id = FALLBACK_USER_ID
-  await db.meta.put({ key: META_KEYS.userId, value: id })
-  cached = id
-  return id
+  // Pure read: the fallback id is deterministic, so returning it without
+  // persisting is safe — and it MUST NOT write, because this runs inside
+  // read-only liveQuery transactions (getSettings, stats). ensureUserId
+  // persists it once at startup in a writable context.
+  cached = FALLBACK_USER_ID
+  return cached
+}
+
+/**
+ * Persist the device id once, from a writable context (app startup). Splitting
+ * the write out of currentUserId is what keeps every liveQuery read safe.
+ */
+export async function ensureUserId(): Promise<string> {
+  const stored = await db.meta.get(META_KEYS.userId)
+  if (typeof stored?.value === 'string') {
+    cached = stored.value
+    return cached
+  }
+  await db.meta.put({ key: META_KEYS.userId, value: FALLBACK_USER_ID })
+  cached = FALLBACK_USER_ID
+  return cached
 }
 
 /** Phase 8: called once after the first anonymous sign-in. */
