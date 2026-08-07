@@ -24,7 +24,7 @@ export function BarChart({ bars }: { bars: MonthlyBar[] }) {
           const isCurrent = index === bars.length - 1
 
           return (
-            <div key={bar.key} className="flex min-w-0 flex-1 flex-col justify-end">
+            <div key={bar.key} className="flex h-full min-w-0 flex-1 flex-col justify-end">
               <motion.div
                 initial={{ height: 0 }}
                 animate={{ height: `${Math.max(ratio * 100, bar.sessions > 0 ? 4 : 1.5)}%` }}
