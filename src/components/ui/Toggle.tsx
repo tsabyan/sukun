@@ -45,11 +45,13 @@ export function Toggle({
           checked ? 'bg-accent' : 'bg-surface-sunken border border-hairline',
         )}
       >
+        {/* Transform-driven, not layout-measured: `x` animates every time,
+            where Motion's `layout` prop silently snapped under Next 16. */}
         <motion.span
-          layout
+          initial={false}
+          animate={{ x: checked ? 20 : 0 }}
           transition={spring.snappy}
           className="h-[27px] w-[27px] rounded-full bg-white shadow-md"
-          style={{ marginLeft: checked ? 20 : 0 }}
         />
       </span>
     </button>

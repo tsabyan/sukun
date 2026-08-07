@@ -1,6 +1,5 @@
 'use client'
 
-import { useId } from 'react'
 import { motion } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
 import { spring } from '@/lib/motion/tokens'
@@ -31,17 +30,32 @@ export function SegmentedControl<T extends string>({
   className,
   'aria-label': ariaLabel,
 }: SegmentedControlProps<T>) {
-  const layoutId = useId()
+  const count = segments.length
+  const activeIndex = Math.max(
+    0,
+    segments.findIndex((segment) => segment.value === value),
+  )
 
   return (
     <div
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        'inline-flex w-full gap-1 rounded-full bg-surface-sunken p-[3px]',
+        'relative inline-flex w-full rounded-full bg-surface-sunken p-[3px]',
         className,
       )}
     >
+      {/* One persistent thumb slid by transform. `x` is a percent of the
+          thumb's own width, so it lands exactly on each segment — and it
+          animates reliably where Motion's layoutId snapped under Next 16. */}
+      <motion.span
+        aria-hidden
+        className="absolute inset-y-[3px] left-[3px] rounded-full bg-surface shadow-sm"
+        style={{ width: `calc((100% - 6px) / ${count})` }}
+        initial={false}
+        animate={{ x: `${activeIndex * 100}%` }}
+        transition={spring.snappy}
+      />
       {segments.map((segment) => {
         const active = segment.value === value
         return (
@@ -52,26 +66,14 @@ export function SegmentedControl<T extends string>({
             aria-selected={active}
             onClick={() => onChange(segment.value)}
             className={cn(
-              'relative flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full',
+              'relative z-10 flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full',
               'text-label transition-colors duration-150',
               active ? 'text-ink' : 'text-ink-2 hover:text-ink',
             )}
           >
-            {active && (
-              <motion.span
-                layoutId={layoutId}
-                transition={spring.snappy}
-                className="absolute inset-0 rounded-full bg-surface shadow-sm"
-              />
-            )}
-            <span className="relative z-10">{segment.label}</span>
+            <span>{segment.label}</span>
             {segment.count !== undefined && (
-              <span
-                className={cn(
-                  'relative z-10 tabular-nums',
-                  active ? 'text-ink-2' : 'text-ink-3',
-                )}
-              >
+              <span className={cn('tabular-nums', active ? 'text-ink-2' : 'text-ink-3')}>
                 {segment.count}
               </span>
             )}
