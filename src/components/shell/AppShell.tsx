@@ -1,11 +1,14 @@
 'use client'
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { motion } from 'motion/react'
+import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { spring } from '@/lib/motion/tokens'
-import { usePageActionStore } from '@/lib/ui/page-action'
+import { useFabStore } from '@/lib/ui/fab'
+import { AddMenu } from './AddMenu'
 import { FULLSCREEN_ROUTES, PRIMARY_NAV, isActive, type NavItem } from './nav'
 
 /**
@@ -54,16 +57,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * A charcoal capsule with a gap in the middle, and the screen's own action
- * riding in that gap — docs/05-screens.md §0.
+ * A charcoal capsule with a gap in the middle, and the add button riding in
+ * that gap — docs/05-screens.md §0.
  *
  * Two tabs either side of the button, never four plus a corner "+": the
- * primary action of a screen belongs under the thumb, and the middle of the
- * bottom edge is the easiest point on a phone to hit.
+ * primary action belongs under the thumb, and the middle of the bottom edge is
+ * the easiest point on a phone to hit.
  */
 function BottomBar({ pathname }: { pathname: string }) {
-  const action = usePageActionStore((s) => s.action)
-  const ActionIcon = action?.icon
+  const hidden = useFabStore((s) => s.hidden)
+  const [addOpen, setAddOpen] = useState(false)
   const [left, right] = [PRIMARY_NAV.slice(0, 2), PRIMARY_NAV.slice(2)]
 
   return (
@@ -82,11 +85,10 @@ function BottomBar({ pathname }: { pathname: string }) {
           <TabItem key={item.href} item={item} active={isActive(pathname, item.href)} />
         ))}
 
-        {/* The gap the button sits in. It keeps its width whether or not the
-            screen registered an action, so the tabs never shift between
-            routes. */}
-        <span className="relative w-14 shrink-0" aria-hidden={!action}>
-          {action && ActionIcon && (
+        {/* The gap the button sits in. It keeps its width on the screens that
+            hide the button, so the tabs never shift between routes. */}
+        <span className="relative w-14 shrink-0" aria-hidden={hidden}>
+          {!hidden && (
             // The wrapper owns the position, the button owns the press. Motion
             // writes `transform` wholesale, so a translate set on the animated
             // element itself is dropped the moment `whileTap` fires.
@@ -98,8 +100,8 @@ function BottomBar({ pathname }: { pathname: string }) {
             >
               <motion.button
                 type="button"
-                onClick={action.onPress}
-                aria-label={action.label}
+                onClick={() => setAddOpen((open) => !open)}
+                aria-label={addOpen ? 'Close the add menu' : 'Add'}
                 whileTap={{ scale: 0.94 }}
                 transition={spring.snappy}
                 className={cn(
@@ -111,7 +113,11 @@ function BottomBar({ pathname }: { pathname: string }) {
                   'shadow-[0_0_0_6px_var(--text-primary),var(--shadow-fab)]',
                 )}
               >
-                <ActionIcon size={26} strokeWidth={1.75} aria-hidden />
+                {addOpen ? (
+                  <X size={26} strokeWidth={1.75} aria-hidden />
+                ) : (
+                  <Plus size={26} strokeWidth={1.75} aria-hidden />
+                )}
               </motion.button>
             </span>
           )}
@@ -121,6 +127,8 @@ function BottomBar({ pathname }: { pathname: string }) {
           <TabItem key={item.href} item={item} active={isActive(pathname, item.href)} />
         ))}
       </nav>
+
+      <AddMenu open={addOpen} onClose={() => setAddOpen(false)} />
     </div>
   )
 }

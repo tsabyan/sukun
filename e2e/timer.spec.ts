@@ -125,7 +125,9 @@ test('attaches a task and counts a pomodoro against it', async ({ page }) => {
   test.setTimeout(150_000)
 
   await page.goto('/tasks')
-  await page.getByLabel('New task').click()
+  // The bottom bar's button means "add" on every screen; the menu picks what.
+  await page.getByLabel('Add', { exact: true }).click()
+  await page.getByRole('button', { name: /^Task/ }).click()
 
   await page.getByLabel('Title').fill('E2E task')
   await page.getByRole('button', { name: 'Save', exact: true }).click()

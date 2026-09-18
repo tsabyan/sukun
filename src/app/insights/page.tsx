@@ -9,13 +9,10 @@ import {
   Flame,
   Lock,
   Play,
-  Plus,
   Settings,
   Timer,
   Trophy,
-  X,
 } from 'lucide-react'
-import { AddMenu } from '@/components/shell/AddMenu'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { Card, CardHead } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -25,14 +22,12 @@ import { Pill, ChipButton } from '@/components/ui/Pill'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
 import { Heatmap, HeatmapLegend } from '@/components/charts/Heatmap'
-import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { DaySheet } from '@/components/insights/DaySheet'
 import { FocusBars } from '@/components/insights/FocusBars'
 import { getInsights } from '@/lib/db/repo'
 import { ACHIEVEMENTS } from '@/lib/db/seed'
 import { taskIcon } from '@/lib/tasks/icons'
 import { useDevOpen } from '@/lib/dev/state'
-import { usePageAction } from '@/lib/ui/page-action'
 import { formatDuration } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 import type { InsightRange } from '@/lib/stats/insights'
@@ -51,8 +46,6 @@ const BADGE_PREVIEW = 4
 export default function InsightsPage() {
   const [range, setRange] = useState<InsightRange>('week')
   const [selected, setSelected] = useState<HeatmapCell | null>(null)
-  const [addOpen, setAddOpen] = useState(false)
-  const [taskFormOpen, setTaskFormOpen] = useState(false)
 
   const data = useLiveQuery(() => getInsights(range), [range])
 
@@ -66,13 +59,6 @@ export default function InsightsPage() {
     [data],
   )
 
-  // The same "+" as everywhere else. Insights owns no list of its own, so it
-  // asks what to add rather than inventing a screen-specific action.
-  usePageAction({
-    label: addOpen ? 'Close the add menu' : 'Add',
-    icon: addOpen ? X : Plus,
-    onPress: () => setAddOpen((open) => !open),
-  })
 
   const max = Math.max(1, ...(data?.bars.map((bar) => bar.focusSeconds) ?? [1]))
   const unlocked = data?.achievements.unlocked ?? new Set<string>()
@@ -262,14 +248,6 @@ export default function InsightsPage() {
           </ul>
         </Card>
       </Link>
-
-      <AddMenu
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAddTask={() => setTaskFormOpen(true)}
-      />
-
-      <TaskFormSheet open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
 
       <DaySheet
         cell={selected}

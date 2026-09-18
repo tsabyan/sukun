@@ -9,7 +9,7 @@ import { Pill } from '@/components/ui/Pill'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { useDevOpen } from '@/lib/dev/state'
-import { usePageAction } from '@/lib/ui/page-action'
+import { useHideFab } from '@/lib/ui/fab'
 import { cn } from '@/lib/utils/cn'
 import { addDays, today as todayLocal, toLocalDate, fromLocalDate } from '@/lib/utils/dates'
 import {
@@ -56,7 +56,8 @@ export function HabitDetail({
   const [renaming, setRenaming] = useState(false)
 
   useDevOpen('habit-delete', () => setConfirmOpen(true))
-  usePageAction(null)
+  // Its own "+" sits beside the count it adds to.
+  useHideFab()
 
   const today = todayLocal()
   const streak = currentStreak(habit, done, today)

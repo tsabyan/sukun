@@ -16,7 +16,7 @@ import { EmptyState } from '@/components/ui/EmptyState'
 import { HeroCard, HeroStats } from '@/components/ui/HeroCard'
 import { toast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { usePageAction } from '@/lib/ui/page-action'
+import { useAddIntent } from '@/lib/ui/fab'
 import { TaskRow } from '@/components/tasks/TaskRow'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { UpsellSheet } from '@/components/tasks/UpsellSheet'
@@ -24,6 +24,7 @@ import {
   FREE_TASK_LIMIT,
   FREE_TASK_WARN_AT,
   completeTask,
+  isPro,
   deleteTask,
   getDayStats,
   listTasks,
@@ -84,6 +85,9 @@ function TasksScreen() {
 
   const tags = useLiveQuery(() => live.tags(), [], [])
   const activeCount = useLiveQuery(() => live.activeTaskCount(), [], 0)
+  // Mirrored from the account's profile by the sync cycle; false until one
+  // lands, which is the right answer for a device that has never signed in.
+  const pro = useLiveQuery(() => isPro(), [], false)
   const completedCount = useLiveQuery(() => live.completedTaskCount(), [], 0)
 
   const tasks = useLiveQuery(
@@ -131,20 +135,18 @@ function TasksScreen() {
     [tasks],
   )
 
-  const atLimit = activeCount >= FREE_TASK_LIMIT
-  const showMeter = activeCount >= FREE_TASK_WARN_AT
+  // Pro lifts the wall entirely — the meter and the upsell both vanish rather
+  // than sitting there greyed out.
+  const atLimit = !pro && activeCount >= FREE_TASK_LIMIT
+  const showMeter = !pro && activeCount >= FREE_TASK_WARN_AT
 
-  usePageAction({
-    label: 'New task',
-    icon: Plus,
-    onPress: () => (atLimit ? setUpsellOpen(true) : setFormOpen(true)),
-  })
+  useAddIntent('task', () => (atLimit ? setUpsellOpen(true) : setFormOpen(true)))
 
   // Consume the query flag during render; an effect would flash the list first.
   const [handledNew, setHandledNew] = useState(false)
   if (wantsNew && !handledNew) {
     setHandledNew(true)
-    if (activeCount >= FREE_TASK_LIMIT) setUpsellOpen(true)
+    if (atLimit) setUpsellOpen(true)
     else setFormOpen(true)
   }
 

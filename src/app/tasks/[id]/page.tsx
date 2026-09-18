@@ -23,7 +23,7 @@ import { Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { toast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { usePageAction } from '@/lib/ui/page-action'
+import { useHideFab } from '@/lib/ui/fab'
 import { TaskIconTile } from '@/components/tasks/TaskIconTile'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { SubtaskList } from '@/components/tasks/SubtaskList'
@@ -69,11 +69,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     router.push('/focus')
   }, [task, router])
 
-  usePageAction(
-    task && task.status === 'active'
-      ? { label: 'Start session', icon: Play, onPress: startSession }
-      : null,
-  )
+  // The bottom bar's button means "add" everywhere; starting a session on
+  // *this* task belongs on the screen, under the progress it moves.
+  useHideFab()
 
   if (task === undefined) return <div className="h-40 animate-pulse rounded-lg bg-hairline" />
 
@@ -198,6 +196,13 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           </div>
         </div>
       </HeroCard>
+
+      {task.status === 'active' && (
+        <Button variant="accent" size="lg" fullWidth onClick={startSession}>
+          <Play size={18} strokeWidth={2} fill="currentColor" aria-hidden />
+          Start a session
+        </Button>
+      )}
 
       <SubtaskList taskId={task.id} />
 

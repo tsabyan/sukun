@@ -101,6 +101,7 @@ export const META_KEYS = {
   notificationsAskedAt: 'notificationsAskedAt',
   deviceId: 'deviceId',
   lastHeartbeatDate: 'lastHeartbeatDate',
+  isPro: 'isPro',
 } as const
 
 export async function getMeta<T>(key: string): Promise<T | undefined> {

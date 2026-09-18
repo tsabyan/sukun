@@ -15,20 +15,21 @@ a 1440px-wide version of it would be a different product.
   at 70% white. Labels are screen-reader only — four labels in a capsule this
   size wrap, and the icons carry the rest.
 - **The one floating action** lives in that gap: a 56px green circle raised
-  15px out of the capsule. It belongs to the *screen*, not the shell — each
-  page registers its own through `usePageAction` and the shell renders whatever
-  is there. A top-right "+" is the hardest point on a phone to reach; the
-  middle of the bottom edge is the easiest. Because it sits in the strip the
-  content already pads for, it never covers a row.
-
-  | Screen | Action |
-  |--------|--------|
-  | Home | `+` → Add menu: Task · Habit · Identity (B10) |
-  | Tasks | `+` → new task |
-  | Habits · Today | `+` → new habit |
-  | Habits · Identities | `+` → new identity |
-  | Insights | ▶ → `/focus` |
-  | Any detail screen | none — its "+" sits beside the count it adds to |
+  15px out of the capsule, with a 6px charcoal ring so the half that rides
+  above the bar reads as cut out of it rather than stuck on top. A top-right
+  "+" is the hardest point on a phone to reach; the middle of the bottom edge
+  is the easiest. Because it sits in the strip the content already pads for, it
+  never covers a row.
+- **It means the same thing on every screen: open the Add menu (B10) —
+  Task · Habit · Identity.** A button whose meaning changed under you would be
+  the one control you always reach for and the one you have to read first. The
+  menu routes to the screen that owns the thing and that screen opens its own
+  form; if you are already there, it just opens.
+- Screens that are not a place to add anything hide it: a task, a habit, an
+  identity, the achievements list. The gap keeps its width so the tabs never
+  shift between routes. Those screens carry their own action in the content
+  instead — "Start a session" under the progress on a task, a "+" beside the
+  habit count on an identity.
 
 - **Settings** is a gear in the screen header, not a destination.
 - `/focus` and the first-run overlay own the whole viewport and hide the bar.

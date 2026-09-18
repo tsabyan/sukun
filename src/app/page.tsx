@@ -4,9 +4,8 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { Plus, Settings, X } from 'lucide-react'
+import { Settings } from 'lucide-react'
 import { Logomark } from '@/components/brand/Logomark'
-import { AddMenu } from '@/components/shell/AddMenu'
 import { HeroCard, HeroWeekBars } from '@/components/ui/HeroCard'
 import { Pill } from '@/components/ui/Pill'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
@@ -18,7 +17,6 @@ import { TimerAnnouncer } from '@/components/timer/TimerAnnouncer'
 import { getRecentDayTotals, getStreaks, live, toggleHabitDay } from '@/lib/db/repo'
 import { currentStreak, isScheduled, rate30 } from '@/lib/habits/streaks'
 import { useDevOpen } from '@/lib/dev/state'
-import { usePageAction } from '@/lib/ui/page-action'
 import { haptic } from '@/lib/utils/haptics'
 import { fromLocalDate, today } from '@/lib/utils/dates'
 import type { LocalDate, Task } from '@/lib/db/types'
@@ -34,17 +32,9 @@ import type { LocalDate, Task } from '@/lib/db/types'
  */
 export default function HomePage() {
   const router = useRouter()
-  const [addOpen, setAddOpen] = useState(false)
   const [taskFormOpen, setTaskFormOpen] = useState(false)
 
-  useDevOpen('add-menu', () => setAddOpen(true))
   useDevOpen('new-task', () => setTaskFormOpen(true))
-
-  usePageAction({
-    label: addOpen ? 'Close the add menu' : 'Add',
-    icon: addOpen ? X : Plus,
-    onPress: () => setAddOpen((open) => !open),
-  })
 
   const data = useLiveQuery(async () => {
     const day = today()
@@ -179,12 +169,6 @@ export default function HomePage() {
         habits={data?.habits ?? []}
         onToggle={toggleHabit}
         onAdd={() => router.push('/habits?new=habit')}
-      />
-
-      <AddMenu
-        open={addOpen}
-        onClose={() => setAddOpen(false)}
-        onAddTask={() => setTaskFormOpen(true)}
       />
 
       <TaskFormSheet open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />

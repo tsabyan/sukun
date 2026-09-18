@@ -29,7 +29,7 @@ import {
 } from '@/lib/db/repo'
 import { currentStreak, isScheduled, longestStreak } from '@/lib/habits/streaks'
 import { useDevOpen } from '@/lib/dev/state'
-import { usePageAction } from '@/lib/ui/page-action'
+import { useAddIntent } from '@/lib/ui/fab'
 import { haptic } from '@/lib/utils/haptics'
 import { addDays, fromLocalDate, today as todayLocal } from '@/lib/utils/dates'
 import type { Habit, LocalDate } from '@/lib/db/types'
@@ -99,18 +99,11 @@ function HabitsView() {
     [identities, habits],
   )
 
-  const onDetail = 'identityId' in view
-
-  usePageAction(
-    onDetail
-      ? null
-      : {
-          label: view.tab === 'today' ? 'New habit' : 'New identity',
-          icon: Plus,
-          onPress: () =>
-            view.tab === 'today' ? setHabitSheet(true) : setIdentitySheet(true),
-        },
-  )
+  useAddIntent('habit', () => setHabitSheet(true))
+  useAddIntent('identity', () => {
+    setView({ tab: 'identities' })
+    setIdentitySheet(true)
+  })
 
   if (!identities || !habits) return <HabitsSkeleton />
 

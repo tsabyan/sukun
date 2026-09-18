@@ -1082,6 +1082,22 @@ export async function toggleHabitDay(habitId: string, day: LocalDate): Promise<b
  * The free tier caps active tasks. Hitting it opens an upsell that captures
  * intent, not payment — docs/01-prd.md §7.
  */
+/**
+ * Pro is a column on `sukun.profiles`, mirrored into local meta by the sync
+ * cycle. It is read here rather than fetched, so the limit still answers
+ * instantly offline and on a device that has never signed in (where it is
+ * false, which is the honest answer).
+ */
+export async function isPro(): Promise<boolean> {
+  assertBrowser('isPro')
+  return (await getMeta<boolean>(META_KEYS.isPro)) === true
+}
+
+export async function setPro(value: boolean): Promise<void> {
+  assertBrowser('setPro')
+  await setMeta(META_KEYS.isPro, value)
+}
+
 export const FREE_TASK_LIMIT = 10
 /** The meter appears before the wall does, so the cap is never a surprise. */
 export const FREE_TASK_WARN_AT = 7
@@ -1292,6 +1308,8 @@ export const repo = {
   exportAll,
   importAll,
   deleteAllData,
+  isPro,
+  setPro,
   getWaitlistEmail,
   joinWaitlist,
   deviceId,
