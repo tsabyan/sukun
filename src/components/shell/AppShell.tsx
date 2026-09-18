@@ -104,7 +104,11 @@ function BottomBar({ pathname }: { pathname: string }) {
                 transition={spring.snappy}
                 className={cn(
                   'inline-flex size-14 items-center justify-center',
-                  'rounded-full bg-green text-on-accent shadow-fab',
+                  'rounded-full bg-green text-on-accent',
+                  // A 6px charcoal ring, so the half that rides above the
+                  // capsule still reads as cut out of the bar rather than
+                  // stuck on top of it.
+                  'shadow-[0_0_0_6px_var(--text-primary),var(--shadow-fab)]',
                 )}
               >
                 <ActionIcon size={26} strokeWidth={1.75} aria-hidden />

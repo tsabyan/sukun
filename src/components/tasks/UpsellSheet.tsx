@@ -87,8 +87,7 @@ export function UpsellSheet({ open, onClose }: { open: boolean; onClose: () => v
       ) : (
         <div className="flex flex-col gap-5">
           <p className="text-body text-ink-2">
-            The free tier holds {FREE_TASK_LIMIT} active tasks. Complete or delete one to
-            add another, or leave your email and we&apos;ll tell you when Pro lands.
+            {`The free tier holds ${FREE_TASK_LIMIT} active tasks. Complete or delete one to add another, or leave your email and we'll tell you when Pro lands.`}
           </p>
 
           <ul className="flex flex-col gap-2">

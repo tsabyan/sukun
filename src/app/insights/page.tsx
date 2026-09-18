@@ -2,7 +2,6 @@
 
 import { createElement, useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
   BarChart3,
@@ -10,10 +9,13 @@ import {
   Flame,
   Lock,
   Play,
+  Plus,
   Settings,
   Timer,
   Trophy,
+  X,
 } from 'lucide-react'
+import { AddMenu } from '@/components/shell/AddMenu'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { Card, CardHead } from '@/components/ui/Card'
 import { EmptyState } from '@/components/ui/EmptyState'
@@ -23,8 +25,9 @@ import { Pill, ChipButton } from '@/components/ui/Pill'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
 import { Heatmap, HeatmapLegend } from '@/components/charts/Heatmap'
+import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { DaySheet } from '@/components/insights/DaySheet'
-import { FocusBubbles } from '@/components/insights/FocusBubbles'
+import { FocusBars } from '@/components/insights/FocusBars'
 import { getInsights } from '@/lib/db/repo'
 import { ACHIEVEMENTS } from '@/lib/db/seed'
 import { taskIcon } from '@/lib/tasks/icons'
@@ -46,9 +49,10 @@ const BADGE_PREVIEW = 4
  * or year at the top; everything below it re-reads through that window.
  */
 export default function InsightsPage() {
-  const router = useRouter()
   const [range, setRange] = useState<InsightRange>('week')
   const [selected, setSelected] = useState<HeatmapCell | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
+  const [taskFormOpen, setTaskFormOpen] = useState(false)
 
   const data = useLiveQuery(() => getInsights(range), [range])
 
@@ -62,10 +66,12 @@ export default function InsightsPage() {
     [data],
   )
 
+  // The same "+" as everywhere else. Insights owns no list of its own, so it
+  // asks what to add rather than inventing a screen-specific action.
   usePageAction({
-    label: 'Start a session',
-    icon: Play,
-    onPress: () => router.push('/focus'),
+    label: addOpen ? 'Close the add menu' : 'Add',
+    icon: addOpen ? X : Plus,
+    onPress: () => setAddOpen((open) => !open),
   })
 
   const max = Math.max(1, ...(data?.bars.map((bar) => bar.focusSeconds) ?? [1]))
@@ -167,7 +173,7 @@ export default function InsightsPage() {
               <CardHead title="Where focus went">
                 <Pill>By tag</Pill>
               </CardHead>
-              <FocusBubbles slices={data.breakdown} />
+              <FocusBars slices={data.breakdown} />
             </Card>
           )}
 
@@ -256,6 +262,14 @@ export default function InsightsPage() {
           </ul>
         </Card>
       </Link>
+
+      <AddMenu
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onAddTask={() => setTaskFormOpen(true)}
+      />
+
+      <TaskFormSheet open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
 
       <DaySheet
         cell={selected}

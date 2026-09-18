@@ -4,9 +4,9 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ListTodo, Plus, Settings, Sprout, UserRound, X } from 'lucide-react'
+import { Plus, Settings, X } from 'lucide-react'
 import { Logomark } from '@/components/brand/Logomark'
-import { ActionSheet } from '@/components/ui/ActionSheet'
+import { AddMenu } from '@/components/shell/AddMenu'
 import { HeroCard, HeroWeekBars } from '@/components/ui/HeroCard'
 import { Pill } from '@/components/ui/Pill'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
@@ -181,33 +181,10 @@ export default function HomePage() {
         onAdd={() => router.push('/habits?new=habit')}
       />
 
-      <ActionSheet
+      <AddMenu
         open={addOpen}
         onClose={() => setAddOpen(false)}
-        title="Add…"
-        options={[
-          {
-            icon: ListTodo,
-            title: 'Task',
-            sub: 'Something to get done, with focus sessions',
-            tone: 'green',
-            onSelect: () => setTaskFormOpen(true),
-          },
-          {
-            icon: Sprout,
-            title: 'Habit',
-            sub: 'A small thing you repeat · tracked with streaks',
-            tone: 'green-mid',
-            onSelect: () => router.push('/habits?new=habit'),
-          },
-          {
-            icon: UserRound,
-            title: 'Identity',
-            sub: 'Who you are becoming · groups your habits',
-            tone: 'surface',
-            onSelect: () => router.push('/habits?new=identity'),
-          },
-        ]}
+        onAddTask={() => setTaskFormOpen(true)}
       />
 
       <TaskFormSheet open={taskFormOpen} onClose={() => setTaskFormOpen(false)} />
