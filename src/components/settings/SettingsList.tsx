@@ -4,7 +4,7 @@ import { ChevronRight } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 /**
- * The iOS grouped inset list — docs/05-screens.md S9.
+ * The iOS grouped inset list — docs/05-screens.md F1.
  *
  * There is no Save button anywhere in settings. Every control writes as it is
  * touched, which is why each row can be this plain.

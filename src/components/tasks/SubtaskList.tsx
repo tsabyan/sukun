@@ -3,9 +3,10 @@
 import { useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Reorder, useDragControls } from 'motion/react'
-import { Check, GripVertical, Plus, Trash2 } from 'lucide-react'
-import { Card } from '@/components/ui/Card'
+import { Check, GripVertical, ListChecks, Plus, Trash2 } from 'lucide-react'
+import { Card, CardHead } from '@/components/ui/Card'
 import { Button } from '@/components/ui/Button'
+import { EmptyState } from '@/components/ui/EmptyState'
 import { Pill } from '@/components/ui/Pill'
 import { toast } from '@/components/ui/Toast'
 import {
@@ -27,7 +28,7 @@ const NEXT_PRIORITY: Record<Priority, Priority> = {
 }
 
 /**
- * The checklist — docs/05-screens.md S6.
+ * The checklist — docs/05-screens.md C4.
  *
  * Breaking a task into steps is the difference between "someday" and a
  * Pomodoro you start now, so adding a step stays one field and one key.
@@ -92,24 +93,32 @@ export function SubtaskList({ taskId }: { taskId: string }) {
   }
 
   return (
-    <section className="flex flex-col gap-3">
-      <header className="flex items-center justify-between px-1">
-        <h2 className="text-title-m text-ink">
-          Subtasks{' '}
-          <span className="text-body-sm tabular-nums text-ink-3">
-            {done}/{stored.length}
-          </span>
-        </h2>
-      </header>
+    <Card className="flex flex-col gap-2.5">
+      <CardHead title="Subtasks">
+        {stored.length > 0 && (
+          <Pill>
+            {done} of {stored.length}
+          </Pill>
+        )}
+      </CardHead>
 
-      {stored.length > 0 && (
-        <Card padding="none" className="overflow-hidden">
-          <Reorder.Group axis="y" values={order} onReorder={commitOrder} className="inset-divider">
-            {order.map((subtask) => (
-              <SubtaskRow key={subtask.id} subtask={subtask} onToggle={toggle} />
-            ))}
-          </Reorder.Group>
-        </Card>
+      {stored.length === 0 ? (
+        <EmptyState
+          icon={ListChecks}
+          title="No subtasks"
+          body="Break it into steps you can finish inside one session."
+        />
+      ) : (
+        <Reorder.Group axis="y" values={order} onReorder={commitOrder}>
+          {order.map((subtask, i) => (
+            <SubtaskRow
+              key={subtask.id}
+              subtask={subtask}
+              onToggle={toggle}
+              last={i === order.length - 1}
+            />
+          ))}
+        </Reorder.Group>
       )}
 
       <div className="flex gap-2">
@@ -123,22 +132,29 @@ export function SubtaskList({ taskId }: { taskId: string }) {
           }}
           placeholder="Add a step…"
           maxLength={200}
-          className="h-11 flex-1 rounded-md border border-hairline bg-surface-sunken px-3.5 text-body text-ink placeholder:text-ink-3 focus:border-accent focus:outline-none"
+          className="h-12 flex-1 rounded-md bg-field px-4 text-body text-ink placeholder:text-ink-3 focus:outline-none"
         />
-        <Button aria-label="Add subtask" disabled={!draft.trim()} onClick={() => void add()}>
-          <Plus size={18} strokeWidth={1.75} />
+        <Button
+          variant="primary"
+          aria-label="Add subtask"
+          disabled={!draft.trim()}
+          onClick={() => void add()}
+        >
+          <Plus size={18} strokeWidth={2} />
         </Button>
       </div>
-    </section>
+    </Card>
   )
 }
 
 function SubtaskRow({
   subtask,
   onToggle,
+  last,
 }: {
   subtask: Subtask
   onToggle: (subtask: Subtask) => void
+  last?: boolean
 }) {
   const controls = useDragControls()
   const [editing, setEditing] = useState(false)
@@ -167,7 +183,10 @@ function SubtaskRow({
       value={subtask}
       dragListener={false}
       dragControls={controls}
-      className="group flex items-center gap-3 bg-surface px-4 py-3"
+      className={cn(
+        'group flex items-center gap-3 bg-surface py-2.5',
+        !last && 'border-b border-hairline',
+      )}
     >
       <button
         type="button"
@@ -176,10 +195,10 @@ function SubtaskRow({
         aria-label={subtask.isDone ? `Reopen ${subtask.title}` : `Complete ${subtask.title}`}
         onClick={() => onToggle(subtask)}
         className={cn(
-          'inline-flex size-6 shrink-0 items-center justify-center rounded-[8px] border transition-colors',
+          'inline-flex size-7 shrink-0 items-center justify-center rounded-full border-[1.5px] transition-colors',
           subtask.isDone
-            ? 'border-accent bg-accent text-on-accent'
-            : 'border-hairline-strong text-transparent hover:border-accent',
+            ? 'border-green bg-green text-on-accent'
+            : 'border-track text-transparent hover:border-ink-3',
         )}
       >
         <Check size={14} strokeWidth={2.5} />
@@ -215,9 +234,7 @@ function SubtaskRow({
             >
               {subtask.title}
             </span>
-            <span className="block text-[11px] text-ink-3">
-              Updated {subtask.updatedAt.slice(0, 10)}
-            </span>
+
           </button>
         )}
       </span>

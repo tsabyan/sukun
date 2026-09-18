@@ -10,9 +10,15 @@ import { expect, test, type Page } from '@playwright/test'
  * recorded with its true duration.
  */
 
-/** Onboarding covers the whole screen on a fresh profile. */
+/**
+ * Onboarding covers the whole screen on a fresh profile. Scoped to the overlay
+ * dialog: the focus screen has a Skip button of its own, and an unscoped match
+ * skips the *phase* instead.
+ */
 async function skipOnboarding(page: Page) {
-  const skip = page.getByRole('button', { name: /^Skip$/ })
+  const skip = page
+    .getByRole('dialog', { name: 'Welcome to Sukun' })
+    .getByRole('button', { name: /^Skip$/ })
   for (let i = 0; i < 3; i++) {
     if (await skip.isVisible().catch(() => false)) {
       await skip.click()
@@ -22,7 +28,7 @@ async function skipOnboarding(page: Page) {
   }
 }
 
-/** Sets the duration and lands on the timer, wherever we were before. */
+/** Sets the duration and lands on the focus screen, wherever we were before. */
 async function setFocusMinutes(page: Page, minutes: number) {
   await page.waitForFunction(() => '__repo' in window, null, { timeout: 15_000 })
   await page.evaluate(
@@ -32,7 +38,7 @@ async function setFocusMinutes(page: Page, minutes: number) {
       ),
     minutes,
   )
-  await page.goto('/')
+  await page.goto('/focus')
   await skipOnboarding(page)
 }
 
@@ -52,8 +58,8 @@ test('runs a full session and records it', async ({ page }) => {
   await setFocusMinutes(page, 1)
   await expect(countdown(page)).toHaveText('01:00', { timeout: 10_000 })
 
-  await page.getByRole('button', { name: 'Start session' }).click()
-  await expect(page.getByRole('button', { name: 'Pause session' })).toBeVisible()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible()
 
   // The worker is what drives this; if it never posts, the text never changes.
   await expect(countdown(page)).not.toHaveText('01:00', { timeout: 5_000 })
@@ -70,20 +76,20 @@ test('runs a full session and records it', async ({ page }) => {
   expect(session.completed).toBe(true)
   expect(session.actualDurationSec).toBe(60)
 
-  // Focus hands over to the break. Exact, because a loose match also hits the
-  // aria-live announcement — which is a good sign, but not what is asserted.
-  await expect(page.getByText('Short break', { exact: true })).toBeVisible()
+  // Focus hands over to the break, and auto-start breaks is on by default, so
+  // the screen inverts to the break phase rather than sitting idle.
+  await expect(page.getByText('SHORT BREAK', { exact: true })).toBeVisible()
 })
 
 test('survives a reload mid-session', async ({ page }) => {
   await setFocusMinutes(page, 25)
-  await page.getByRole('button', { name: 'Start session' }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
 
   await page.waitForTimeout(3000)
   const before = await countdown(page).textContent()
 
   await page.reload()
-  await expect(page.getByRole('button', { name: 'Pause session' })).toBeVisible({
+  await expect(page.getByRole('button', { name: 'Pause', exact: true })).toBeVisible({
     timeout: 10_000,
   })
 
@@ -95,7 +101,7 @@ test('survives a reload mid-session', async ({ page }) => {
 
 test('keeps time while the tab is hidden', async ({ page, context }) => {
   await setFocusMinutes(page, 25)
-  await page.getByRole('button', { name: 'Start session' }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
 
   // A second tab pushes the first into the background for real.
   const other = await context.newPage()
@@ -119,7 +125,7 @@ test('attaches a task and counts a pomodoro against it', async ({ page }) => {
   test.setTimeout(150_000)
 
   await page.goto('/tasks')
-  await page.getByRole('button', { name: 'Add task' }).click()
+  await page.getByLabel('New task').click()
 
   await page.getByLabel('Title').fill('E2E task')
   await page.getByRole('button', { name: 'Save', exact: true }).click()
@@ -127,14 +133,13 @@ test('attaches a task and counts a pomodoro against it', async ({ page }) => {
 
   await setFocusMinutes(page, 1)
   await page.getByRole('button', { name: 'Attach a task' }).click()
-  // Scoped to the picker: the same task also shows in Today's tasks behind it,
-  // and the hidden onboarding overlay is a dialog too — hence the name filter.
+  // Scoped to the picker: the hidden onboarding overlay is a dialog too.
   await page
-    .getByRole('dialog', { name: /What are you working on/i })
+    .getByRole('dialog', { name: /Attach a task/i })
     .getByRole('button', { name: /E2E task/ })
     .click()
 
-  await page.getByRole('button', { name: 'Start session' }).click()
+  await page.getByRole('button', { name: 'Start', exact: true }).click()
   await page.waitForTimeout(62_000)
 
   const pomodoros = await page.evaluate(async () => {

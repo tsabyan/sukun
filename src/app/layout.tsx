@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Archivo, Instrument_Sans } from 'next/font/google'
+import { Outfit } from 'next/font/google'
 import '@/styles/globals.css'
 import { themeScript } from '@/lib/theme/script'
 import { ThemeProvider } from '@/lib/theme/use-theme'
 import { AppShell } from '@/components/shell/AppShell'
 import { DaylightLayer } from '@/components/shell/DaylightLayer'
 import { DevBridge } from '@/components/dev/DevBridge'
+import { MobileViewport } from '@/components/dev/MobileViewport'
 import { TimerEngine } from '@/components/timer/TimerEngine'
 import { ToastViewport } from '@/components/ui/Toast'
 import { SyncIndicator } from '@/components/sync/SyncIndicator'
@@ -13,18 +14,14 @@ import { DeferredProviders } from '@/components/shell/DeferredProviders'
 import { Onboarding } from '@/components/onboarding/Onboarding'
 import { KeyboardShortcuts } from '@/components/shell/KeyboardShortcuts'
 
-// Instrument voice — timer digits, headings, condensed data labels.
-const archivo = Archivo({
+/**
+ * One family for the whole app — docs/04 §2. Outfit's geometric lowercase
+ * suits the brand, and its 300 weight is what makes the big numerals read as
+ * an instrument panel rather than a headline.
+ */
+const outfit = Outfit({
   subsets: ['latin'],
-  axes: ['wdth'],
-  variable: '--font-archivo',
-  display: 'swap',
-})
-
-// Human voice — everything read as a sentence.
-const instrument = Instrument_Sans({
-  subsets: ['latin'],
-  variable: '--font-instrument',
+  variable: '--font-outfit',
   display: 'swap',
 })
 
@@ -53,8 +50,8 @@ export const viewport: Viewport = {
   maximumScale: 5,
   viewportFit: 'cover',
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#F4F6F8' },
-    { media: '(prefers-color-scheme: dark)', color: '#0F1216' },
+    { media: '(prefers-color-scheme: light)', color: '#F0F0F1' },
+    { media: '(prefers-color-scheme: dark)', color: '#1B1C1E' },
   ],
 }
 
@@ -67,7 +64,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${archivo.variable} ${instrument.variable}`}
+      className={outfit.variable}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
@@ -83,6 +80,7 @@ export default function RootLayout({
           <KeyboardShortcuts />
           <DeferredProviders />
           <DevBridge />
+          <MobileViewport />
         </ThemeProvider>
       </body>
     </html>

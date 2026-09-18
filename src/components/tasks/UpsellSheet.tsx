@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { Check } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
@@ -33,6 +34,12 @@ export function UpsellSheet({ open, onClose }: { open: boolean; onClose: () => v
   const [error, setError] = useState<string | null>(null)
   const [submitted, setSubmitted] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  useDevOpen('upsell-error', () => {
+    setEmail('not-an-email')
+    setError("That address doesn't look right.")
+  })
+  useDevOpen('upsell-sent', () => setSubmitted(true))
 
   const submit = async () => {
     const value = email.trim()

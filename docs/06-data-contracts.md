@@ -229,7 +229,9 @@ export interface Repo {
   getWeekDots(): Promise<Array<{ date: LocalDate; active: boolean }>>
   getDayStats(date?: LocalDate): Promise<DayStats>
   getHeatmap(weeks: number): Promise<HeatmapCell[]>
-  getPersonalBests(range: 'day' | 'week' | 'month'): Promise<PersonalBests>
+  getRecentDayTotals(days: number): Promise<DayStats[]>
+  getInsights(range: 'week' | 'month' | 'year'): Promise<Insights>
+  getSessionsOnDay(date: LocalDate): Promise<Session[]>
   getAchievements(): Promise<Achievement[]>
   evaluateAchievements(): Promise<string[]>      // returns newly unlocked keys
 
@@ -243,6 +245,8 @@ export interface Repo {
 Read paths in components use `useLiveQuery` against Dexie directly *through repo-provided query builders* — the async methods above are for mutations and computed reads. Keep the split explicit so live-updating lists don't get stuck behind promises. The builders live on `repo.live`.
 
 **Phased implementation.** The interface was complete from Phase 1 so the contract never moved. Methods belonging to later phases threw an error naming their phase rather than returning something plausible and wrong; all of them are now implemented (`autoPlan` and `undoAutoPlan` in Phase 5, `getHeatmap`, `getPersonalBests` and `evaluateAchievements` in Phase 6).
+
+`getPersonalBests` and `getMonthlyActivity` still exist and are still tested, but no screen calls them: the v2 Insights screen (docs/05 E1) folded both into `getInsights`. They stay because the period-ranking maths behind them is the expensive part to get right, and a compact "personal bests" widget is a likely next use.
 
 `getStreaks`, `getWeekDots`, and `getDayStats` landed early, in Phase 1, because the Focus Timer's streak card (Phase 3) needed them before the reports screen existed.
 
@@ -268,6 +272,59 @@ export interface PersonalBests {
   }>
 }
 ```
+
+### Insights (docs/05 E1)
+
+One call per range, not eight. Every figure on that screen is a different slice
+of the same session table; eight live queries would each re-read it and then
+disagree with one another for a frame.
+
+```ts
+export type InsightRange = 'week' | 'month' | 'year'
+
+export interface Insights {
+  range:        InsightRange
+  title:        string        // "Focused in September"
+  chip:         string        // "This month"
+  focusSeconds: number
+  sessions:     number
+  delta:        string | null // "+12% vs August"; null with no history
+  bars:         Array<{ key: string; label: string; focusSeconds: number }>
+  bestDay:      { date: LocalDate; label: string; focusSeconds: number; sessions: number } | null
+  tasksCompleted: number
+  streaks:      { current: number; longest: number }
+  breakdown:    Array<{ name: string; focusSeconds: number; share: number }>
+  heatmap:      HeatmapCell[]
+  heatmapLabel: string        // "Jun 23 – Sep 15"
+  weekStartsOn: number
+  records:      { longestStreak: number; mostSessionsInADay: number; totalFocusSeconds: number }
+  achievements: { unlocked: Set<string>; total: number }
+  empty:        boolean       // nothing has ever been recorded
+}
+```
+
+**Windows are inclusive on both ends** and come from the calendar, not from a
+rolling count of days: a week is the configured week, a month is the calendar
+month, a year is the calendar year. The comparison period is the same kind of
+period immediately before, so "this month vs last month" compares 30 days with
+31 — which is what the words mean.
+
+**`delta` is null when the previous period has no time in it.** A first week
+with no history is not an infinite improvement.
+
+**`bars`** are seven days for a week, seven-day chunks (`W1`…`W5`) for a month,
+and twelve months for a year.
+
+**`breakdown`** attributes each session to its task's *first* tag, alphabetically,
+or `Untagged`. Splitting one session across two tags would make the shares total
+more than the time actually spent — a rough answer beats a wrong one. Everything
+past the top three merges into `Other`, and the shares always sum to exactly 100
+(largest-remainder rounding), biggest first.
+
+**`records`** are all-time and never windowed. A record you can lose by changing
+a dropdown is not a record.
+
+Pure functions in `lib/stats/insights.ts`, tested in `insights.test.ts`.
 
 **Intensity buckets** are relative to the user's own p90 daily session count over the visible range, floored at 4. A user who does 2 sessions a day should see a full-looking heatmap; a fixed absolute scale makes light users feel they're failing, which is the opposite of what this app is for.
 

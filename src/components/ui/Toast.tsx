@@ -1,6 +1,7 @@
 'use client'
 
 import { create } from 'zustand'
+import { useDevOpen } from '@/lib/dev/state'
 import { AnimatePresence, motion } from 'motion/react'
 import { ease, dur } from '@/lib/motion/tokens'
 import { newId } from '@/lib/utils/ids'
@@ -63,6 +64,10 @@ export const toast = (message: string, options?: Parameters<ToastState['show']>[
 export function ToastViewport() {
   const toasts = useToastStore((s) => s.toasts)
   const dismiss = useToastStore((s) => s.dismiss)
+
+  useDevOpen('toast', () => {
+    toast('Task deleted', { action: { label: 'Undo', onPress: () => {} }, durationMs: 600_000 })
+  })
 
   return (
     <div

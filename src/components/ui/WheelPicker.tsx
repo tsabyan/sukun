@@ -19,7 +19,7 @@ interface WheelPickerSheetProps {
 }
 
 /**
- * A scroll-snap wheel, not a number input — docs/05-screens.md S9.
+ * A scroll-snap wheel, not a number input — docs/05-screens.md F2.
  *
  * Durations are picked from a short list of sensible values, and a numeric
  * keyboard for "25" is both slower and an invitation to type 250. Snapping is

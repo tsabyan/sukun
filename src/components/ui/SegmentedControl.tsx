@@ -20,8 +20,8 @@ interface SegmentedControlProps<T extends string> {
 }
 
 /**
- * The iOS pill — docs/04-design-system.md §5.
- * Sunken track, raised thumb, thumb slides between segments via layoutId.
+ * The pill switcher — docs/04-design-system.md §5.
+ * White track with a hairline, charcoal thumb, label inverts under it.
  */
 export function SegmentedControl<T extends string>({
   segments,
@@ -41,7 +41,7 @@ export function SegmentedControl<T extends string>({
       role="tablist"
       aria-label={ariaLabel}
       className={cn(
-        'relative inline-flex w-full rounded-full bg-surface-sunken p-[3px]',
+        'relative inline-flex w-full rounded-full border border-hairline bg-surface p-1',
         className,
       )}
     >
@@ -50,8 +50,8 @@ export function SegmentedControl<T extends string>({
           animates reliably where Motion's layoutId snapped under Next 16. */}
       <motion.span
         aria-hidden
-        className="absolute inset-y-[3px] left-[3px] rounded-full bg-surface shadow-sm"
-        style={{ width: `calc((100% - 6px) / ${count})` }}
+        className="absolute inset-y-1 left-1 rounded-full bg-ink"
+        style={{ width: `calc((100% - 8px) / ${count})` }}
         initial={false}
         animate={{ x: `${activeIndex * 100}%` }}
         transition={spring.snappy}
@@ -67,13 +67,13 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(segment.value)}
             className={cn(
               'relative z-10 flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full',
-              'text-label transition-colors duration-150',
-              active ? 'text-ink' : 'text-ink-2 hover:text-ink',
+              'text-body-sm font-medium transition-colors duration-150',
+              active ? 'text-surface' : 'text-ink-2 hover:text-ink',
             )}
           >
             <span>{segment.label}</span>
             {segment.count !== undefined && (
-              <span className={cn('tabular-nums', active ? 'text-ink-2' : 'text-ink-3')}>
+              <span className={cn('tabular-nums', active ? 'text-surface/70' : 'text-ink-3')}>
                 {segment.count}
               </span>
             )}

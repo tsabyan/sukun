@@ -73,7 +73,7 @@ export interface TaskTemplate {
   title: string
 }
 
-/** The strip across the top of the create sheet — docs/05-screens.md S5. */
+/** The strip across the top of the create sheet — docs/05-screens.md C5. */
 export const TASK_TEMPLATES: TaskTemplate[] = [
   {
     id: 'meeting',
@@ -164,7 +164,7 @@ export interface AchievementDef {
 
 /**
  * The catalog lives in code, not in Postgres — 22 rows that never change per
- * user. Only the unlock timestamps are stored. docs/05-screens.md S7.
+ * user. Only the unlock timestamps are stored. docs/05-screens.md E3.
  */
 export const ACHIEVEMENTS: AchievementDef[] = [
   // first steps

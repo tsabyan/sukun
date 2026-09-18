@@ -1,240 +1,331 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Pause, Play, RotateCcw, SkipForward, Volume2, VolumeX, X } from 'lucide-react'
-import { FlipDigit } from '@/components/timer/FlipDigit'
+import {
+  Check,
+  ChevronDown,
+  Coffee,
+  Pause,
+  Play,
+  Plus,
+  RotateCcw,
+  SkipForward,
+  Volume2,
+  VolumeX,
+  X,
+} from 'lucide-react'
+import { Button } from '@/components/ui/Button'
+import { IconButton } from '@/components/ui/Button'
+import { Pill } from '@/components/ui/Pill'
+import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
+import { AttachTaskSheet } from '@/components/timer/AttachTaskSheet'
+import { TimerAnnouncer } from '@/components/timer/TimerAnnouncer'
 import { useTimerStore } from '@/lib/timer/store'
-import { usePrefersReducedMotion } from '@/hooks/usePrefersReducedMotion'
-import { updateSettings } from '@/lib/db/repo'
-import { formatCountdown } from '@/lib/utils/dates'
+import { elapsedMs, nextPhase } from '@/lib/timer/machine'
+import { formatCountdown, formatDuration } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 
-const PHASE_RAIL = {
+/** Below this, a reset costs nothing and asking is just friction. */
+const CONFIRM_THRESHOLD_MS = 60_000
+
+const EYEBROW = {
   focus: 'FOCUS',
-  short_break: 'BREAK',
-  long_break: 'REST',
+  short_break: 'SHORT BREAK',
+  long_break: 'LONG BREAK',
 } as const
 
-const IDLE_HIDE_MS = 3000
-
 /**
- * S3 — the flip clock.
+ * S2 — the focus screen. docs/05-screens.md.
  *
- * A dedicated, distraction-free view of the same running machine. This is the
- * screen people screenshot, which is the argument for it existing at all: it
- * turns a utility into an identity.
+ * The running timer, full bleed, and nothing else: one number, one progress
+ * line, the task it belongs to, and three controls in the thumb zone. Focus
+ * is lime; a break inverts to charcoal, so looking up tells you which side of
+ * the cycle you are on without reading a word.
  *
- * Deliberately not orientation-locked. A browser tab cannot hold a lock
- * reliably, and a landscape flip clock on a propped-up phone is the best
- * version of this screen — so the layout reflows rather than fighting it.
+ * Minimising (the chevron) returns to Focus with the clock still running —
+ * this screen is a view of the machine, never the machine itself.
  */
-export default function FlipClockPage() {
+export default function FocusScreen() {
   const router = useRouter()
 
   const seconds = useTimerStore((s) => Math.ceil(s.remainingMs / 1000))
   const status = useTimerStore((s) => s.runtime.status)
   const phase = useTimerStore((s) => s.runtime.phase)
+  const cycleCount = useTimerStore((s) => s.runtime.cycleCount)
+  const perCycle = useTimerStore((s) => s.durations.sessionsUntilLongBreak)
   const hydrated = useTimerStore((s) => s.hydrated)
   const muted = useTimerStore((s) => s.muted)
+  const taskTitle = useTimerStore((s) => s.attachedTaskTitle)
+  const taskId = useTimerStore((s) => s.runtime.taskId)
+  const phaseSeconds = useTimerStore((s) =>
+    s.runtime.phase === 'focus'
+      ? s.durations.focus
+      : s.runtime.phase === 'short_break'
+        ? s.durations.shortBreak
+        : s.durations.longBreak,
+  )
+  /**
+   * Which break comes after the focus phase in progress. `nextPhase` is the
+   * machine's own rule, applied to the count this session will produce, so the
+   * hint never disagrees with what actually happens.
+   */
+  const breakSeconds = useTimerStore((s) => {
+    const after = s.runtime.phase === 'focus' ? s.runtime.cycleCount + 1 : s.runtime.cycleCount
+    return nextPhase('focus', after, s.durations) === 'long_break'
+      ? s.durations.longBreak
+      : s.durations.shortBreak
+  })
 
-  const [controlsVisible, setControlsVisible] = useState(true)
-  const reduceMotion = usePrefersReducedMotion()
-  const hideTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [confirmReset, setConfirmReset] = useState(false)
+  const [elapsedLabel, setElapsedLabel] = useState('')
 
-  /* — controls get out of the way, and come back on any input */
-  const wake = useCallback(() => {
-    setControlsVisible(true)
-    if (hideTimer.current) clearTimeout(hideTimer.current)
-    hideTimer.current = setTimeout(() => setControlsVisible(false), IDLE_HIDE_MS)
-  }, [])
+  const onBreak = phase !== 'focus'
+  const paused = status === 'paused'
+  const idle = status === 'idle'
+  /** A finished focus session leaves the machine idle on a break phase. */
+  const justFinished = idle && onBreak
+  const progress = Math.max(0, Math.min(1, 1 - seconds / Math.max(1, phaseSeconds)))
+  const sessionIndex = cycleCount % perCycle
 
-  useEffect(() => {
-    // Controls already render visible, so this only starts the countdown —
-    // no state is set synchronously here.
-    hideTimer.current = setTimeout(() => setControlsVisible(false), IDLE_HIDE_MS)
-
-    const events: Array<keyof WindowEventMap> = ['pointermove', 'pointerdown', 'keydown']
-    events.forEach((event) => window.addEventListener(event, wake))
-    return () => {
-      events.forEach((event) => window.removeEventListener(event, wake))
-      if (hideTimer.current) clearTimeout(hideTimer.current)
+  const handleReset = () => {
+    const { runtime, reset } = useTimerStore.getState()
+    const elapsed = elapsedMs(runtime, Date.now())
+    if (elapsed >= CONFIRM_THRESHOLD_MS) {
+      setElapsedLabel(formatDuration(Math.round(elapsed / 1000)))
+      setConfirmReset(true)
+      return
     }
-  }, [wake])
-
-  /* — Esc leaves, space toggles; the timer keeps running either way */
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') router.push('/')
-      if (event.key === ' ') {
-        event.preventDefault()
-        useTimerStore.getState().toggle()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [router])
-
-  /* — keep the screen on while someone is staring at it */
-  useEffect(() => {
-    let sentinel: WakeLockSentinel | null = null
-    let released = false
-
-    const request = async () => {
-      try {
-        sentinel = (await navigator.wakeLock?.request('screen')) ?? null
-      } catch {
-        // Unsupported, or refused because the tab is not visible. Neither is
-        // worth telling the user about — the clock still runs.
-      }
-    }
-
-    void request()
-
-    // The lock is dropped whenever the tab is hidden, so it has to be re-taken
-    // on return or the screen sleeps for the rest of the session.
-    const onVisible = () => {
-      if (document.visibilityState === 'visible' && !released) void request()
-    }
-    document.addEventListener('visibilitychange', onVisible)
-
-    return () => {
-      released = true
-      document.removeEventListener('visibilitychange', onVisible)
-      void sentinel?.release()
-    }
-  }, [])
-
-  const exit = () => {
-    void updateSettings({ defaultTimerMode: 'ring' })
-    router.push('/')
+    reset()
   }
 
-  const display = hydrated ? formatCountdown(seconds * 1000) : '--:--'
-  const [m1, m2, s1, s2] = display.replace(':', '').split('')
-  const running = status === 'running'
-  const digitSize = { fontSize: 'clamp(72px, 22vw, 180px)' }
-
   return (
-    <main
-      className="relative flex min-h-dvh items-center justify-center overflow-hidden bg-canvas px-6"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-    >
-      <p aria-live="polite" className="sr-only">
-        {hydrated ? `${display} remaining, ${status}` : 'Loading timer'}
-      </p>
-
-      {/* portrait stacks the pairs; landscape lays all four in a row */}
-      <div className="flex flex-col items-center gap-3 landscape:flex-row landscape:gap-4">
-        <div className="flex gap-2 landscape:gap-3" style={digitSize}>
-          <FlipDigit value={m1} animate={!reduceMotion} />
-          <FlipDigit value={m2} animate={!reduceMotion} />
-        </div>
-
-        <Separator />
-
-        <div className="flex gap-2 landscape:gap-3" style={digitSize}>
-          <FlipDigit value={s1} animate={!reduceMotion} />
-          <FlipDigit value={s2} animate={!reduceMotion} />
-        </div>
-      </div>
-
-      <span
-        aria-hidden
-        className="eyebrow pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-ink-3"
-        style={{ writingMode: 'vertical-rl' }}
-      >
-        {PHASE_RAIL[phase]}
-      </span>
-
-      <div
-        className={cn(
-          'absolute inset-x-0 bottom-0 flex items-center justify-center gap-2 pb-8',
-          'transition-opacity duration-500',
-          controlsVisible ? 'opacity-100' : 'pointer-events-none opacity-0',
-        )}
-      >
-        <RailButton label="Reset" onClick={() => useTimerStore.getState().reset()}>
-          <RotateCcw size={18} strokeWidth={1.75} />
-        </RailButton>
-
-        <RailButton
-          label={running ? 'Pause' : 'Start'}
-          primary
-          onClick={() => useTimerStore.getState().toggle()}
-        >
-          {running ? (
-            <Pause size={22} strokeWidth={1.75} fill="currentColor" />
-          ) : (
-            <Play size={22} strokeWidth={1.75} fill="currentColor" className="ml-0.5" />
-          )}
-        </RailButton>
-
-        <RailButton label="Skip" onClick={() => useTimerStore.getState().skip()}>
-          <SkipForward size={18} strokeWidth={1.75} />
-        </RailButton>
-
-        <RailButton
-          label={muted ? 'Unmute alerts' : 'Mute alerts'}
-          onClick={() => useTimerStore.getState().toggleMuted()}
-        >
-          {muted ? (
-            <VolumeX size={18} strokeWidth={1.75} />
-          ) : (
-            <Volume2 size={18} strokeWidth={1.75} />
-          )}
-        </RailButton>
-
-        <RailButton label="Exit flip clock" onClick={exit}>
-          <X size={18} strokeWidth={1.75} />
-        </RailButton>
-      </div>
-    </main>
-  )
-}
-
-function Separator() {
-  return (
-    <span
-      aria-hidden
-      className="flex gap-2 px-[0.15em] landscape:flex-col landscape:gap-3"
-    >
-      {[0, 1].map((i) => (
-        <span
-          key={i}
-          className="block size-2.5 rounded-full bg-accent"
-          style={{ animation: 'sukun-pulse 2s ease-in-out infinite' }}
-        />
-      ))}
-    </span>
-  )
-}
-
-function RailButton({
-  label,
-  primary,
-  onClick,
-  children,
-}: {
-  label: string
-  primary?: boolean
-  onClick: () => void
-  children: React.ReactNode
-}) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      title={label}
-      onClick={onClick}
+    <div
       className={cn(
-        'inline-flex items-center justify-center rounded-full transition-colors',
-        primary
-          ? 'size-14 bg-accent text-on-accent'
-          : 'size-11 text-ink-3 hover:bg-surface hover:text-ink',
+        'relative flex min-h-dvh flex-col',
+        onBreak ? 'bg-ink text-surface' : 'bg-green text-ink',
       )}
     >
-      {children}
-    </button>
+      {/* — top bar */}
+      <header className="flex items-center justify-between gap-3 px-4 pt-3">
+        <IconButton
+          label="Minimise"
+          variant="secondary"
+          className={onBreak ? 'border-transparent bg-surface/10 text-surface' : 'border-transparent'}
+          onClick={() => router.push('/')}
+        >
+          <ChevronDown size={20} strokeWidth={1.75} />
+        </IconButton>
+
+        <Pill tone={onBreak ? 'neutral' : 'dark'}>
+          {justFinished
+            ? `Session ${Math.max(1, sessionIndex)} of ${perCycle} done`
+            : paused
+              ? 'Paused'
+              : onBreak
+                ? `${sessionIndex} of ${perCycle} done`
+                : `Session ${sessionIndex + 1} of ${perCycle}`}
+        </Pill>
+
+        <IconButton
+          label={muted ? 'Unmute chime' : 'Mute chime'}
+          variant="secondary"
+          className={onBreak ? 'border-transparent bg-surface/10 text-surface' : 'border-transparent'}
+          onClick={() => useTimerStore.getState().toggleMuted()}
+        >
+          {muted ? <VolumeX size={20} strokeWidth={1.75} /> : <Volume2 size={20} strokeWidth={1.75} />}
+        </IconButton>
+      </header>
+
+      {/* — the clock */}
+      <div className="flex flex-1 flex-col items-center justify-center gap-4 px-6">
+        {justFinished ? (
+          <span className="mb-1 inline-flex size-24 items-center justify-center rounded-xl bg-surface/10">
+            <Check size={44} strokeWidth={1.75} className="text-green" />
+          </span>
+        ) : null}
+
+        <p className={cn('eyebrow', onBreak ? 'text-surface/60' : 'text-ink/60')}>
+          {justFinished ? 'SESSION DONE' : EYEBROW[phase]}
+        </p>
+
+        {justFinished ? (
+          <p className="text-center text-title-l">
+            {taskId && taskTitle
+              ? `${formatDuration(phaseSecondsOfFocus())} on ${taskTitle}`
+              : `${formatDuration(phaseSecondsOfFocus())} of focus`}
+          </p>
+        ) : (
+          <p
+            aria-hidden
+            className={cn(
+              'numerals text-display-xl transition-opacity duration-200',
+              paused && 'opacity-55',
+            )}
+          >
+            {hydrated ? formatCountdown(seconds * 1000) : '––:––'}
+          </p>
+        )}
+
+        {!justFinished && (
+          <div
+            className={cn(
+              'h-1.5 w-full max-w-[280px] overflow-hidden rounded-full',
+              onBreak ? 'bg-surface/20' : 'on-hero-strong',
+            )}
+          >
+            <div
+              className={cn('h-full rounded-full transition-[width] duration-500', onBreak ? 'bg-green' : 'bg-ink')}
+              style={{ width: `${Math.round(progress * 100)}%` }}
+            />
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => !onBreak && setPickerOpen(true)}
+          disabled={onBreak}
+          className={cn(
+            'inline-flex max-w-full items-center gap-2 rounded-full px-4 py-2.5 text-body font-medium',
+            onBreak ? 'bg-surface/10 text-surface' : 'bg-surface text-ink',
+          )}
+        >
+          {onBreak ? (
+            <>
+              <Coffee size={16} strokeWidth={1.75} className="text-green" aria-hidden />
+              Stand up. Look at something far away.
+            </>
+          ) : (
+            <>
+              {!taskId && <Plus size={16} strokeWidth={2} aria-hidden />}
+              <span className="truncate">
+                {taskId && taskTitle ? taskTitle : 'Attach a task'}
+              </span>
+            </>
+          )}
+        </button>
+
+        {/* session dots — where you are in the cycle */}
+        <div className="flex items-center gap-2" aria-hidden>
+          {Array.from({ length: perCycle }, (_, i) => {
+            const done = i < sessionIndex
+            const current = !onBreak && i === sessionIndex
+            return (
+              <span
+                key={i}
+                className={cn(
+                  'h-2.5 rounded-full',
+                  current ? 'w-7' : 'w-2.5',
+                  done || current
+                    ? onBreak
+                      ? 'bg-surface'
+                      : 'bg-ink'
+                    : onBreak
+                      ? 'border-[1.5px] border-surface/50'
+                      : 'border-[1.5px] border-ink/40',
+                )}
+              />
+            )
+          })}
+        </div>
+      </div>
+
+      {/* — controls */}
+      {justFinished ? (
+        <div className="flex flex-col gap-2.5 px-5 pb-3">
+          <Button
+            variant="accent"
+            size="lg"
+            fullWidth
+            onClick={() => useTimerStore.getState().start()}
+          >
+            <Coffee size={18} strokeWidth={1.75} aria-hidden />
+            Start break · {formatDuration(breakSeconds)}
+          </Button>
+          <Button
+            variant="secondary"
+            fullWidth
+            className="border-transparent bg-surface/10 text-surface"
+            onClick={() => useTimerStore.getState().skip()}
+          >
+            Skip break, keep going
+          </Button>
+        </div>
+      ) : (
+        <div className="flex items-center justify-center gap-6 pb-3">
+          <IconButton
+            label="Reset"
+            size={56}
+            variant="secondary"
+            className={onBreak ? 'border-transparent bg-surface/10 text-surface' : 'border-transparent'}
+            onClick={handleReset}
+          >
+            <RotateCcw size={22} strokeWidth={1.75} />
+          </IconButton>
+
+          <IconButton
+            label={status === 'running' ? 'Pause' : 'Start'}
+            size={80}
+            variant={onBreak ? 'accent' : 'primary'}
+            onClick={() => useTimerStore.getState().toggle()}
+          >
+            {status === 'running' ? (
+              <Pause size={30} strokeWidth={1.75} />
+            ) : (
+              <Play size={30} strokeWidth={1.75} />
+            )}
+          </IconButton>
+
+          <IconButton
+            label={onBreak ? 'End break' : 'Skip'}
+            size={56}
+            variant="secondary"
+            className={onBreak ? 'border-transparent bg-surface/10 text-surface' : 'border-transparent'}
+            onClick={() => useTimerStore.getState().skip()}
+          >
+            {onBreak ? <X size={22} strokeWidth={1.75} /> : <SkipForward size={22} strokeWidth={1.75} />}
+          </IconButton>
+        </div>
+      )}
+
+      <p
+        className={cn(
+          'pb-4 text-center text-body-sm',
+          onBreak ? 'text-surface/60' : 'text-ink/60',
+        )}
+      >
+        {justFinished
+          ? `Next: focus session ${Math.min(perCycle, sessionIndex + 1)} of ${perCycle}`
+          : paused
+            ? "Resume when you're ready"
+            : onBreak
+              ? 'Next: focus session'
+              : `Next: break · ${formatDuration(breakSeconds)}`}
+      </p>
+
+      <AttachTaskSheet open={pickerOpen} onClose={() => setPickerOpen(false)} />
+
+      <ConfirmSheet
+        open={confirmReset}
+        title="Reset this session?"
+        body={`${elapsedLabel} of focus will not be recorded. The session count stays where it is.`}
+        confirmLabel="Reset session"
+        cancelLabel="Keep going"
+        destructive
+        onConfirm={() => {
+          useTimerStore.getState().reset()
+          setConfirmReset(false)
+        }}
+        onClose={() => setConfirmReset(false)}
+      />
+
+      <TimerAnnouncer />
+    </div>
   )
+}
+
+/** The length of the focus phase that just ended, for the "done" headline. */
+function phaseSecondsOfFocus() {
+  return useTimerStore.getState().durations.focus
 }

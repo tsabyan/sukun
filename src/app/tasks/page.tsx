@@ -1,19 +1,23 @@
 'use client'
 
 import { Suspense, useRef, useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDownUp, Plus, Settings, Sparkles } from 'lucide-react'
+import { ArrowDownUp, ListPlus, Lock, Plus, Settings } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
 import { Button, IconButton } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ChipButton, Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { HeroCard, HeroStats } from '@/components/ui/HeroCard'
 import { toast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { TaskCard } from '@/components/tasks/TaskCard'
+import { usePageAction } from '@/lib/ui/page-action'
+import { TaskRow } from '@/components/tasks/TaskRow'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { UpsellSheet } from '@/components/tasks/UpsellSheet'
 import {
@@ -21,11 +25,13 @@ import {
   FREE_TASK_WARN_AT,
   completeTask,
   deleteTask,
+  getDayStats,
   listTasks,
   live,
   reopenTask,
   restoreTask,
 } from '@/lib/db/repo'
+import { formatDuration, today } from '@/lib/utils/dates'
 import type { Task, TaskStatus } from '@/lib/db/types'
 
 type SortKey = 'recent' | 'priority' | 'due' | 'alpha'
@@ -67,7 +73,7 @@ function TasksScreen() {
   const searchParams = useSearchParams()
   const wantsNew = searchParams.get('new') === '1'
 
-  const [status, setStatus] = useState<TaskStatus>('active')
+  const [status, setStatus] = useState<TaskStatus | 'all'>('active')
   const [sort, setSort] = useState<SortKey>('recent')
   const [tagIds, setTagIds] = useState<string[]>([])
   const [sortOpen, setSortOpen] = useState(false)
@@ -81,13 +87,58 @@ function TasksScreen() {
   const completedCount = useLiveQuery(() => live.completedTaskCount(), [], 0)
 
   const tasks = useLiveQuery(
-    () => listTasks({ status, tagIds: tagIds.length ? tagIds : undefined, sort }),
+    () =>
+      listTasks({
+        status: status === 'all' ? undefined : status,
+        tagIds: tagIds.length ? tagIds : undefined,
+        sort,
+      }),
     [status, sort, tagIds.join(',')],
     undefined,
   )
 
+  /** The hero's three numbers: what today holds, and what the month produced. */
+  const summary = useLiveQuery(async () => {
+    const [planned, day, completed] = await Promise.all([
+      live.planned(today()),
+      getDayStats(),
+      live.tasks('completed'),
+    ])
+    const estimateLeft = (await live.tasks('active')).reduce(
+      (total, task) => total + Math.max(0, task.estimatedPomodoros - task.completedPomodoros),
+      0,
+    )
+    return {
+      plannedToday: planned.filter((task) => task.status === 'active').length,
+      focusedToday: day.focusSeconds,
+      completed: completed.length,
+      estimateLeft,
+    }
+  }, [])
+
+  useDevOpen('task-new', () => setFormOpen(true))
+  useDevOpen('upsell', () => setUpsellOpen(true))
+  useDevOpen('upsell-error', () => setUpsellOpen(true))
+  useDevOpen('upsell-sent', () => setUpsellOpen(true))
+  useDevOpen('sort', () => setSortOpen(true))
+  useDevOpen('task-discard', () => setFormOpen(true))
+  useDevOpen(
+    'task-delete',
+    () => {
+      if (!tasks?.length) return false
+      setPendingDelete(tasks[0])
+    },
+    [tasks],
+  )
+
   const atLimit = activeCount >= FREE_TASK_LIMIT
   const showMeter = activeCount >= FREE_TASK_WARN_AT
+
+  usePageAction({
+    label: 'New task',
+    icon: Plus,
+    onPress: () => (atLimit ? setUpsellOpen(true) : setFormOpen(true)),
+  })
 
   // Consume the query flag during render; an effect would flash the list first.
   const [handledNew, setHandledNew] = useState(false)
@@ -130,7 +181,7 @@ function TasksScreen() {
   }
 
   return (
-    <div className="flex flex-col gap-5">
+    <div className="flex flex-col gap-3.5">
       <PageHeader
         title="Tasks"
         actions={
@@ -138,13 +189,10 @@ function TasksScreen() {
             <IconButton label="Sort tasks" onClick={() => setSortOpen((v) => !v)}>
               <ArrowDownUp size={20} strokeWidth={1.75} />
             </IconButton>
-            <IconButton label="Add task" variant="primary" size={40} onClick={openCreate}>
-              <Plus size={20} strokeWidth={2} />
-            </IconButton>
             <Link
               href="/settings"
               aria-label="Settings"
-              className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
+              className="inline-flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-sm"
             >
               <Settings size={20} strokeWidth={1.75} />
             </Link>
@@ -152,11 +200,40 @@ function TasksScreen() {
         }
       />
 
-      <SegmentedControl<TaskStatus>
+      <HeroCard
+        title={status === 'completed' ? 'Completed' : 'Open tasks'}
+        chip={
+          <Pill tone="dark">
+            {status === 'active' ? 'Active' : status === 'completed' ? 'This month' : 'All'}
+          </Pill>
+        }
+        value={status === 'completed' ? completedCount : activeCount}
+        sub={
+          atLimit
+            ? `${activeCount} of ${FREE_TASK_LIMIT} on the free plan`
+            : summary && summary.plannedToday > 0
+              ? `${summary.plannedToday} planned for today`
+              : 'nothing planned for today yet'
+        }
+      >
+        <HeroStats
+          items={[
+            { value: String(summary?.plannedToday ?? 0), label: 'planned' },
+            { value: String(summary?.completed ?? 0), label: 'completed' },
+            {
+              value: summary ? formatDuration(summary.focusedToday) : '0m',
+              label: 'today',
+            },
+          ]}
+        />
+      </HeroCard>
+
+      <SegmentedControl<TaskStatus | 'all'>
         aria-label="Task filter"
         segments={[
           { value: 'active', label: 'Active', count: activeCount },
           { value: 'completed', label: 'Completed', count: completedCount },
+          { value: 'all', label: 'All' },
         ]}
         value={status}
         onChange={setStatus}
@@ -180,7 +257,7 @@ function TasksScreen() {
       )}
 
       {tags.length > 0 && (
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1">
+        <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           {tags.map((tag) => (
             <ChipButton
               key={tag.id}
@@ -242,38 +319,42 @@ function TaskListBody({
   onDelete,
 }: {
   tasks: Task[] | undefined
-  status: TaskStatus
+  status: TaskStatus | 'all'
   filtered: boolean
   onCreate: () => void
   onComplete: (task: Task) => void
   onDelete: (task: Task) => void
 }) {
-  if (!tasks) {
-    return (
-      <div className="flex flex-col gap-2">
-        {[0, 1, 2].map((i) => (
-          <Card key={i} className="h-[76px] animate-pulse" />
-        ))}
-      </div>
-    )
-  }
+  if (!tasks) return <Card className="h-64 animate-pulse" padding="none" />
 
   if (tasks.length === 0) {
     return (
-      <Card className="flex flex-col items-start gap-4">
-        <p className="text-body text-ink-2">
-          {filtered
-            ? 'No tasks match those tags.'
-            : status === 'active'
-              ? 'No open tasks. Add one, or check what you finished.'
-              : 'Nothing completed yet.'}
-        </p>
-        {status === 'active' && !filtered && (
-          <Button variant="primary" onClick={onCreate}>
-            <Plus size={18} strokeWidth={1.75} />
-            Add a task
-          </Button>
-        )}
+      <Card padding="none" className="py-2">
+        <EmptyState
+          icon={ListPlus}
+          title={
+            filtered
+              ? 'Nothing under those tags'
+              : status === 'completed'
+                ? 'Nothing completed yet'
+                : 'No tasks yet'
+          }
+          body={
+            filtered
+              ? 'Clear a tag to see the rest of the list.'
+              : status === 'completed'
+                ? 'Finish one and it lands here with the sessions it took.'
+                : 'Add one to give your next session a purpose. Templates make it a two-tap job.'
+          }
+          action={
+            status !== 'completed' && !filtered ? (
+              <Button variant="primary" onClick={onCreate}>
+                <Plus size={16} strokeWidth={2} aria-hidden />
+                New task
+              </Button>
+            ) : null
+          }
+        />
       </Card>
     )
   }
@@ -283,13 +364,20 @@ function TaskListBody({
   }
 
   return (
-    <ul className="flex flex-col gap-2">
-      {tasks.map((task) => (
-        <li key={task.id}>
-          <TaskCard task={task} onComplete={onComplete} onDelete={onDelete} />
-        </li>
-      ))}
-    </ul>
+    <Card padding="list">
+      <ul>
+        {tasks.map((task, i) => (
+          <li key={task.id}>
+            <TaskRow
+              task={task}
+              onComplete={onComplete}
+              onDelete={onDelete}
+              last={i === tasks.length - 1}
+            />
+          </li>
+        ))}
+      </ul>
+    </Card>
   )
 }
 
@@ -312,22 +400,24 @@ function VirtualTaskList({
   })
 
   return (
-    <div ref={scrollRef} className="max-h-[70dvh] overflow-y-auto">
-      <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
-        {virtualizer.getVirtualItems().map((item) => {
-          const task = tasks[item.index]
-          return (
-            <div
-              key={task.id}
-              className="absolute inset-x-0 pb-2"
-              style={{ transform: `translateY(${item.start}px)` }}
-            >
-              <TaskCard task={task} onComplete={onComplete} onDelete={onDelete} />
-            </div>
-          )
-        })}
+    <Card padding="list">
+      <div ref={scrollRef} className="max-h-[70dvh] overflow-y-auto">
+        <div className="relative w-full" style={{ height: virtualizer.getTotalSize() }}>
+          {virtualizer.getVirtualItems().map((item) => {
+            const task = tasks[item.index]
+            return (
+              <div
+                key={task.id}
+                className="absolute inset-x-0"
+                style={{ transform: `translateY(${item.start}px)` }}
+              >
+                <TaskRow task={task} onComplete={onComplete} onDelete={onDelete} />
+              </div>
+            )
+          })}
+        </div>
       </div>
-    </div>
+    </Card>
   )
 }
 
@@ -340,25 +430,25 @@ function FreeTierMeter({ count, onOpen }: { count: number; onOpen: () => void })
   return (
     <button type="button" onClick={onOpen} className="w-full text-left">
       <Card padding="compact" className="flex flex-col gap-2">
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between gap-2">
           <span className="text-body-sm tabular-nums text-ink-2">
-            {count} of {FREE_TASK_LIMIT} tasks
+            {count} of {FREE_TASK_LIMIT} active tasks
           </span>
           <Pill tone="accent">
-            <Sparkles size={13} strokeWidth={1.75} aria-hidden />
-            Pro
+            <Lock size={12} strokeWidth={1.75} aria-hidden />
+            Plus
           </Pill>
         </div>
 
-        <span className="block h-1.5 overflow-hidden rounded-full bg-hairline">
+        <span className="block h-1.5 overflow-hidden rounded-full bg-track">
           <span
-            className="block h-full rounded-full bg-accent transition-[width] duration-300"
+            className="block h-full rounded-full bg-ink transition-[width] duration-300"
             style={{ width: `${ratio * 100}%` }}
           />
         </span>
 
         <span className="text-body-sm text-ink-3">
-          {remaining === 0 ? 'Free limit reached' : `${remaining} left on the free tier`}
+          {remaining === 0 ? 'Free limit reached' : `${remaining} left on the free plan`}
         </span>
       </Card>
     </button>

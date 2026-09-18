@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft } from 'lucide-react'
@@ -45,6 +46,10 @@ export default function SettingsPage() {
   const [picker, setPicker] = useState<PickerKey>(null)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
+
+  useDevOpen('picker', () => setPicker('focus'))
+  useDevOpen('delete-all', () => setDeleteOpen(true))
+  useDevOpen('delete-all-typed', () => setDeleteOpen(true))
 
   if (!settings) {
     return <div className="h-[60dvh] animate-pulse rounded-lg bg-hairline" />
@@ -211,19 +216,6 @@ export default function SettingsPage() {
           />
         </div>
 
-        <div className="flex flex-col gap-2 px-4 py-3">
-          <span className="text-body text-ink">Default timer view</span>
-          <SegmentedControl
-            aria-label="Default timer view"
-            segments={[
-              { value: 'ring', label: 'Ring' },
-              { value: 'flip', label: 'Flip clock' },
-            ]}
-            value={settings.defaultTimerMode}
-            onChange={(defaultTimerMode) => void save({ defaultTimerMode })}
-          />
-        </div>
-
         <SettingsRow label="Week starts on">
           <select
             value={settings.weekStartsOn}
@@ -329,6 +321,8 @@ export default function SettingsPage() {
  */
 function DeleteEverythingSheet({ open, onClose }: { open: boolean; onClose: () => void }) {
   const [confirmation, setConfirmation] = useState('')
+
+  useDevOpen('delete-all-typed', () => setConfirmation('DELETE'))
 
   const run = async () => {
     await deleteAllData()

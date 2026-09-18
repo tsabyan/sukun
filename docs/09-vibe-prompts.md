@@ -120,7 +120,7 @@ it resumes exactly.
 ## Phase 3 — Focus Timer screen
 
 ```
-Read docs/05-screens.md S1 and docs/04-design-system.md §5 in full.
+Read docs/05-screens.md B1 and docs/04-design-system.md §5 in full.
 
 Build the Focus Timer screen at /.
 
@@ -150,7 +150,7 @@ before you call this done.
 ## Phase 4 — Tasks, Create sheet, Task details
 
 ```
-Read docs/05-screens.md S4, S5 and S6, and docs/06-data-contracts.md in full.
+Read docs/05-screens.md C1, C4 and C5, and docs/06-data-contracts.md in full.
 
 Build the three task screens.
 
@@ -192,7 +192,7 @@ Do NOT build an AI-generate button. It is out of scope for v1.
 ## Phase 5 — Daily Planner
 
 ```
-Read docs/05-screens.md S2 in full.
+Read docs/05-screens.md B8 in full.
 
 Build /plan.
 
@@ -225,7 +225,7 @@ Show an Undo toast for 6 seconds after every Auto-plan run.
 ## Phase 6 — Reports and Personal Bests
 
 ```
-Read docs/05-screens.md S7 and S8, docs/03-database.md (streak definition), and
+Read docs/05-screens.md E1 and E3, docs/03-database.md (streak definition), and
 docs/06-data-contracts.md §4 in full.
 
 1. src/lib/stats/aggregate.ts — all computed locally from Dexie:
@@ -268,7 +268,7 @@ No chart library. Both charts are hand-rolled SVG.
 ## Phase 7 — Flip Clock and Settings
 
 ```
-Read docs/05-screens.md S3 and S9, and docs/04-design-system.md §5 in full.
+Read docs/05-screens.md B3 and F1, and docs/04-design-system.md §5 in full.
 
 /focus — full screen, no tab bar, no header:
 - FlipDigit component: two stacked halves, perspective 800px, top half rotateX

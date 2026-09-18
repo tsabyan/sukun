@@ -1,18 +1,37 @@
 import { db, assertBrowser, getMeta, META_KEYS, setMeta } from './schema'
 import { currentUserId, ensureUserId } from './identity'
-import { ensureSettings, readSettings, DEFAULT_SETTINGS } from './seed'
+import { ACHIEVEMENT_COUNT, ensureSettings, readSettings, DEFAULT_SETTINGS } from './seed'
 import { enqueue } from '@/lib/sync/outbox'
 import { newId } from '@/lib/utils/ids'
-import { nowIso, today } from '@/lib/utils/dates'
+import { addDays, fromLocalDate, nowIso, toLocalDate, today } from '@/lib/utils/dates'
 import { computeStreaks, weekDots, type Streaks } from '@/lib/stats/streaks'
 import {
   buildHeatmap,
   buildPersonalBests,
   countingDaysOf,
+  dailyTotals,
+  focusSessions,
   monthlyActivity,
   type MonthlyBar,
   type Range,
 } from '@/lib/stats/aggregate'
+import {
+  barsFor,
+  bestDayIn,
+  breakdownByTag,
+  deltaLabel,
+  previousWindow,
+  rangeChip,
+  rangeTitle,
+  recordsOf,
+  windowOf,
+  inWindow,
+  type BestDay,
+  type BreakdownSlice,
+  type InsightBar,
+  type InsightRange,
+  type Records,
+} from '@/lib/stats/insights'
 import { newlyEarned } from '@/lib/stats/achievements'
 import { planDay } from '@/lib/planner/autoplan'
 import type {
@@ -544,6 +563,25 @@ async function allSessions(): Promise<Session[]> {
   return rows.filter(alive)
 }
 
+/**
+ * The trailing week, oldest first — the bars inside the hero card on Focus,
+ * Habits and Insights. One pass over sessions rather than seven day queries.
+ */
+export async function getRecentDayTotals(days = 7): Promise<DayStats[]> {
+  assertBrowser('getRecentDayTotals')
+  const totals = dailyTotals(focusSessions(await allSessions()))
+  const end = today()
+  return Array.from({ length: days }, (_, i) => {
+    const date = addDays(end, i - (days - 1))
+    const total = totals.get(date)
+    return {
+      date,
+      sessions: total?.sessions ?? 0,
+      focusSeconds: total?.focusSeconds ?? 0,
+    }
+  })
+}
+
 export async function getHeatmap(weeks = 12): Promise<HeatmapCell[]> {
   assertBrowser('getHeatmap')
   const [sessions, settings] = await Promise.all([allSessions(), readSettings()])
@@ -560,6 +598,106 @@ export async function getPersonalBests(range: Range = 'week'): Promise<PersonalB
   const [sessions, settings] = await Promise.all([allSessions(), readSettings()])
   const streaks = computeStreaks(countingDaysOf(sessions))
   return buildPersonalBests(sessions, range, streaks, today(), settings.weekStartsOn)
+}
+
+/**
+ * Everything the Insights screen draws, in one read — docs/06-data-contracts.md §4.
+ *
+ * One function rather than eight, because every figure on that screen is a
+ * different slice of the same session table: eight live queries would each
+ * re-read it and then disagree with one another for a frame.
+ */
+export interface Insights {
+  range: InsightRange
+  title: string
+  chip: string
+  focusSeconds: number
+  sessions: number
+  delta: string | null
+  bars: InsightBar[]
+  bestDay: BestDay | null
+  tasksCompleted: number
+  streaks: Streaks
+  breakdown: BreakdownSlice[]
+  heatmap: HeatmapCell[]
+  heatmapLabel: string
+  weekStartsOn: number
+  records: Records
+  achievements: { unlocked: Set<string>; total: number }
+  /** nothing has ever been recorded — the screen shows its empty state */
+  empty: boolean
+}
+
+const HEATMAP_WEEKS = 12
+
+export async function getInsights(range: InsightRange = 'week'): Promise<Insights> {
+  assertBrowser('getInsights')
+
+  const [sessions, tasks, links, tags, unlocked, settings] = await Promise.all([
+    allSessions(),
+    db.tasks.filter(alive).toArray(),
+    db.taskTags.toArray(),
+    db.tags.filter(alive).toArray(),
+    db.achievements.toArray(),
+    readSettings(),
+  ])
+
+  const now = today()
+  const weekStartsOn = settings.weekStartsOn
+  const window = windowOf(range, now, weekStartsOn)
+  const previous = previousWindow(range, window)
+
+  const focus = focusSessions(sessions)
+  const inRange = focus.filter((s) => inWindow(s.localDate, window))
+  const inPrevious = focus.filter((s) => inWindow(s.localDate, previous))
+
+  const seconds = (rows: Session[]) => rows.reduce((sum, s) => sum + s.actualDurationSec, 0)
+  const focusSeconds = seconds(inRange)
+
+  const tagName = new Map(tags.map((tag) => [tag.id, tag.name]))
+  const firstTagOf = new Map<string, string>()
+  for (const link of [...links].sort((a, b) =>
+    (tagName.get(a.tagId) ?? '').localeCompare(tagName.get(b.tagId) ?? ''),
+  )) {
+    if (!firstTagOf.has(link.taskId) && tagName.has(link.tagId)) {
+      firstTagOf.set(link.taskId, tagName.get(link.tagId)!)
+    }
+  }
+
+  const heatmap = buildHeatmap(sessions, HEATMAP_WEEKS, now, weekStartsOn)
+
+  return {
+    range,
+    title: rangeTitle(range, window),
+    chip: rangeChip(range),
+    focusSeconds,
+    sessions: inRange.length,
+    delta: deltaLabel(range, previous, focusSeconds, seconds(inPrevious)),
+    bars: barsFor(range, inRange, window),
+    bestDay: bestDayIn(focus, window),
+    tasksCompleted: tasks.filter(
+      (task) =>
+        task.status === 'completed' &&
+        task.completedAt != null &&
+        inWindow(toLocalDate(task.completedAt), window),
+    ).length,
+    streaks: computeStreaks(countingDaysOf(sessions)),
+    breakdown: breakdownByTag(inRange, (taskId) => firstTagOf.get(taskId) ?? null),
+    heatmap,
+    heatmapLabel: heatmapLabelOf(heatmap),
+    weekStartsOn,
+    records: recordsOf(focus, computeStreaks(countingDaysOf(sessions)).longest),
+    achievements: { unlocked: new Set(unlocked.map((a) => a.key)), total: ACHIEVEMENT_COUNT },
+    empty: focus.length === 0,
+  }
+}
+
+/** "Jun 23 – Sep 15" under the heat grid. */
+function heatmapLabelOf(cells: HeatmapCell[]): string {
+  if (cells.length === 0) return ''
+  const format = (date: LocalDate) =>
+    fromLocalDate(date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })
+  return `${format(cells[0].date)} – ${format(cells[cells.length - 1].date)}`
 }
 
 export async function getSessionsOnDay(date: LocalDate): Promise<Session[]> {
@@ -1134,8 +1272,10 @@ export const repo = {
   getWeekDots,
   getDayStats,
   getHeatmap,
+  getRecentDayTotals,
   getMonthlyActivity,
   getPersonalBests,
+  getInsights,
   getSessionsOnDay,
   getAchievements,
   evaluateAchievements,

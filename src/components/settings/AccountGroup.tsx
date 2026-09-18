@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { Check } from 'lucide-react'
 import { SettingsGroup, SettingsRow, SettingsButtonRow } from './SettingsList'
 import { Button } from '@/components/ui/Button'
@@ -12,7 +13,7 @@ import { syncNow, useSyncStore } from '@/lib/sync/engine'
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 /**
- * Account and sync — docs/05-screens.md S9.
+ * Account and sync — docs/05-screens.md F1.
  *
  * Anonymous is the normal state, not a degraded one, so this group leads with
  * what the user gets by adding an email rather than warning them about not
@@ -29,6 +30,12 @@ export function AccountGroup() {
   const [sent, setSent] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [connecting, setConnecting] = useState(false)
+
+  useDevOpen('signin-error', () => {
+    setEmail('not-an-email')
+    setError('Could not send that link. Check the address and try again.')
+  })
+  useDevOpen('signin-sent', () => setSent(true))
 
   const continueWithGoogle = async () => {
     setConnecting(true)

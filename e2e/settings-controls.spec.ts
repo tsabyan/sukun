@@ -11,7 +11,9 @@ import { expect, test, type Page } from '@playwright/test'
  */
 
 async function skipOnboarding(page: Page) {
-  const skip = page.getByRole('button', { name: /^Skip$/ })
+  const skip = page
+    .getByRole('dialog', { name: 'Welcome to Sukun' })
+    .getByRole('button', { name: /^Skip$/ })
   for (let i = 0; i < 3; i++) {
     if (await skip.isVisible().catch(() => false)) {
       await skip.click()
@@ -25,20 +27,20 @@ test('segmented control updates state and slides its thumb', async ({ page }) =>
   await page.goto('/settings')
   await skipOnboarding(page)
 
-  const tabs = page.locator('[role="tablist"][aria-label="Default timer view"]')
+  const tabs = page.locator('[role="tablist"][aria-label="Theme"]')
   await expect(tabs).toBeVisible()
   const thumb = tabs.locator('span[aria-hidden]')
 
-  await tabs.getByRole('tab', { name: 'Ring' }).click()
+  await tabs.getByRole('tab', { name: 'System' }).click()
   await page.waitForTimeout(400)
   const before = await thumb.boundingBox()
 
-  await tabs.getByRole('tab', { name: 'Flip clock' }).click()
-  await expect(tabs.getByRole('tab', { name: 'Flip clock' })).toHaveAttribute('aria-selected', 'true')
+  await tabs.getByRole('tab', { name: 'Light' }).click()
+  await expect(tabs.getByRole('tab', { name: 'Light' })).toHaveAttribute('aria-selected', 'true')
   await page.waitForTimeout(400)
   const after = await thumb.boundingBox()
 
-  // Two segments: the thumb must travel right by roughly its own width.
+  // One segment across: the thumb must travel right by roughly its own width.
   expect(after!.x - before!.x).toBeGreaterThan(before!.width * 0.6)
 })
 

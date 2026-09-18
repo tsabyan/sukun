@@ -28,7 +28,7 @@ export function Stepper({
   return (
     <div
       className={cn(
-        'inline-flex h-11 items-center gap-1 rounded-md border border-hairline bg-surface-sunken px-1',
+        'inline-flex h-12 items-center rounded-full bg-field p-1',
         className,
       )}
     >
@@ -37,12 +37,12 @@ export function Stepper({
         aria-label={`Decrease ${label}`}
         disabled={value <= min}
         onClick={() => clamp(value - 1)}
-        className="inline-flex size-9 items-center justify-center rounded-[10px] text-ink-2 transition-colors hover:text-ink disabled:opacity-[0.38]"
+        className="inline-flex size-10 items-center justify-center rounded-full bg-surface text-ink shadow-sm transition-colors disabled:bg-transparent disabled:text-ink-3 disabled:shadow-none"
       >
         <Minus size={16} strokeWidth={2} />
       </button>
 
-      <span className="min-w-[4.5ch] text-center text-body tabular-nums text-ink">
+      <span className="min-w-[3.5ch] text-center text-title-s tabular-nums text-ink">
         {value}
         {suffix && <span className="ml-1 text-body-sm text-ink-3">{suffix}</span>}
       </span>
@@ -52,7 +52,7 @@ export function Stepper({
         aria-label={`Increase ${label}`}
         disabled={value >= max}
         onClick={() => clamp(value + 1)}
-        className="inline-flex size-9 items-center justify-center rounded-[10px] text-ink-2 transition-colors hover:text-ink disabled:opacity-[0.38]"
+        className="inline-flex size-10 items-center justify-center rounded-full bg-ink text-lime transition-colors disabled:bg-transparent disabled:text-ink-3"
       >
         <Plus size={16} strokeWidth={2} />
       </button>

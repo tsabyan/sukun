@@ -3,7 +3,7 @@ import { BLOCK_CAPACITY, blockLoad, planDay, type PlanCandidate } from './autopl
 import type { DayBlock, Priority } from '@/lib/db/types'
 
 /**
- * The bucketing rules from docs/05-screens.md S2. The one that matters most:
+ * The bucketing rules from docs/05-screens.md B8. The one that matters most:
  * running Auto-plan a second time must be safe, which means it is idempotent
  * and it never moves a task the user placed by hand.
  */

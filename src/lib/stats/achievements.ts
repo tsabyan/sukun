@@ -12,7 +12,7 @@ import { addDays, fromLocalDate } from '@/lib/utils/dates'
 import type { LocalDate } from '@/lib/db/types'
 
 /**
- * Unlock rules for the 22-badge catalog in lib/db/seed.ts — docs/05 S7.
+ * Unlock rules for the 22-badge catalog in lib/db/seed.ts — docs/05 E3.
  *
  * Evaluated after every completed session. Badges are never revoked: a streak
  * you once held is a thing you did, and taking the badge away when it lapses

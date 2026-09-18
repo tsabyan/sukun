@@ -1,20 +1,21 @@
+'use client'
+
 import { createElement } from 'react'
 import { taskIcon, TASK_COLOR_VAR } from '@/lib/tasks/icons'
-import type { TaskColor } from '@/lib/db/types'
 import { cn } from '@/lib/utils/cn'
+import type { TaskColor } from '@/lib/db/types'
 
 /**
- * A squircle, not a rounded rectangle — docs/04-design-system.md §3. The
- * continuous curve is the detail that reads as iOS rather than "div with
- * border-radius", and it costs one path.
+ * A task's own icon and colour — the form preview and the detail header.
+ *
+ * Elsewhere in a list a task uses the neutral `IconTile`, because eight
+ * saturated squares down a column is noise; here the colour is the point,
+ * since this is where it gets chosen and confirmed.
  */
-const SQUIRCLE =
-  'M50 0C88 0 100 12 100 50C100 88 88 100 50 100C12 100 0 88 0 50C0 12 12 0 50 0Z'
-
 export function TaskIconTile({
   icon,
   color,
-  size = 36,
+  size = 40,
   className,
 }: {
   icon: string
@@ -26,21 +27,21 @@ export function TaskIconTile({
 
   return (
     <span
-      className={cn('relative inline-flex shrink-0 items-center justify-center', className)}
-      style={{ width: size, height: size }}
+      aria-hidden
+      style={{
+        width: size,
+        height: size,
+        borderRadius: Math.round(size * 0.35),
+        background: `color-mix(in oklch, ${tint} 22%, var(--surface))`,
+      }}
+      className={cn('inline-flex shrink-0 items-center justify-center', className)}
     >
-      <svg viewBox="0 0 100 100" className="absolute inset-0 size-full" aria-hidden>
-        <path d={SQUIRCLE} fill={tint} fillOpacity={0.14} />
-      </svg>
-      {/* createElement rather than <Icon />: the lint rule cannot tell a
-          lookup into a static map from a component defined during render,
-          and the icons are stable module references either way. */}
+      {/* createElement, not <Icon />: the lint rule reads a capitalised local
+          as a component defined during render. */}
       {createElement(taskIcon(icon), {
-        size: size * 0.5,
+        size: Math.round(size * 0.45),
         strokeWidth: 1.75,
-        style: { color: tint },
-        className: 'relative',
-        'aria-hidden': true,
+        style: { color: `color-mix(in oklch, ${tint} 78%, var(--text-primary))` },
       })}
     </span>
   )

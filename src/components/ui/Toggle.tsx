@@ -14,7 +14,7 @@ interface ToggleProps {
   className?: string
 }
 
-/** iOS switch. 51×31 is the platform size; anything smaller misses on touch. */
+/** iOS switch, green when on. The row around it carries the 44px target. */
 export function Toggle({
   checked,
   onChange,
@@ -40,9 +40,9 @@ export function Toggle({
       {!hideLabel && <span className="text-body text-ink">{label}</span>}
       <span
         className={cn(
-          'relative flex h-[31px] w-[51px] shrink-0 rounded-full p-[2px]',
+          'relative flex h-[30px] w-[50px] shrink-0 rounded-full p-[3px]',
           'transition-colors duration-200',
-          checked ? 'bg-accent' : 'bg-surface-sunken border border-hairline',
+          checked ? 'bg-green' : 'bg-track',
         )}
       >
         {/* Transform-driven, not layout-measured: `x` animates every time,
@@ -51,7 +51,7 @@ export function Toggle({
           initial={false}
           animate={{ x: checked ? 20 : 0 }}
           transition={spring.snappy}
-          className="h-[27px] w-[27px] rounded-full bg-white shadow-md"
+          className="h-6 w-6 rounded-full bg-surface shadow-sm"
         />
       </span>
     </button>
