@@ -1,13 +1,4 @@
-import {
-  BarChart3,
-  CalendarDays,
-  ListTodo,
-  Settings,
-  Sprout,
-  Timer,
-  Trophy,
-  type LucideIcon,
-} from 'lucide-react'
+import { BarChart3, ListTodo, Sprout, Timer, type LucideIcon } from 'lucide-react'
 
 export interface NavItem {
   href: string
@@ -15,19 +6,18 @@ export interface NavItem {
   icon: LucideIcon
 }
 
-/** Primary destinations — bottom tab bar on mobile, top of the rail on desktop. */
+/**
+ * The four primary destinations, in the bottom tab capsule.
+ *
+ * Four, deliberately: Plan folded into Focus as the "Today's plan" card and
+ * its sheet, Records folded into Insights, and the flip clock dropped. Settings
+ * is a gear in the screen header, not a destination. docs/05-screens.md §0.
+ */
 export const PRIMARY_NAV: NavItem[] = [
-  { href: '/', label: 'Timer', icon: Timer },
-  { href: '/plan', label: 'Plan', icon: CalendarDays },
+  { href: '/', label: 'Focus', icon: Timer },
   { href: '/tasks', label: 'Tasks', icon: ListTodo },
   { href: '/habits', label: 'Habits', icon: Sprout },
-  { href: '/reports', label: 'Report', icon: BarChart3 },
-]
-
-/** Desktop-only, pinned to the bottom of the rail. */
-export const SECONDARY_NAV: NavItem[] = [
-  { href: '/records', label: 'Personal bests', icon: Trophy },
-  { href: '/settings', label: 'Settings', icon: Settings },
+  { href: '/insights', label: 'Insights', icon: BarChart3 },
 ]
 
 /** Routes that own the whole viewport. */

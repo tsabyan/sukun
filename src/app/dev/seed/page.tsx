@@ -1,11 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { Card, SectionLabel } from '@/components/ui/Card'
 import { seedDevData, type SeedResult } from '@/lib/db/dev-seed'
 import { deleteAllData, countActiveTasks, getStreaks, getDayStats } from '@/lib/db/repo'
 import { formatDuration } from '@/lib/utils/dates'
+import { ONBOARDED_STORAGE_KEY } from '@/lib/theme/script'
 
 type Status = 'idle' | 'working' | 'done' | 'error'
 
@@ -14,14 +15,6 @@ export default function DevSeedPage() {
   const [result, setResult] = useState<SeedResult | null>(null)
   const [summary, setSummary] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
-
-  if (process.env.NODE_ENV === 'production') {
-    return (
-      <div className="pt-24 text-center">
-        <p className="text-body text-ink-2">Not available.</p>
-      </div>
-    )
-  }
 
   const run = async (fn: () => Promise<void>) => {
     setStatus('working')
@@ -55,9 +48,37 @@ export default function DevSeedPage() {
   const handleWipe = () =>
     run(async () => {
       await deleteAllData()
+      // `?wipe=1&onboarding=1` also brings the first-run overlay back.
+      if (new URLSearchParams(window.location.search).has('onboarding')) {
+        localStorage.removeItem(ONBOARDED_STORAGE_KEY)
+      }
       setResult(null)
       setSummary([])
     })
+
+  // `?run=1` seeds on load, `?wipe=1` clears, so an automated browser can reach a populated app
+  // without clicking through the button.
+  const autoRan = useRef(false)
+  useEffect(() => {
+    if (autoRan.current) return
+    if (process.env.NODE_ENV === 'production') return
+    const params = new URLSearchParams(window.location.search)
+    if (!params.has('run') && !params.has('wipe')) return
+    autoRan.current = true
+    const id = window.setTimeout(() => {
+      void (params.has('wipe') ? handleWipe() : handleSeed())
+    }, 0)
+    return () => window.clearTimeout(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  if (process.env.NODE_ENV === 'production') {
+    return (
+      <div className="pt-24 text-center">
+        <p className="text-body text-ink-2">Not available.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col gap-6 pt-4">
@@ -94,6 +115,8 @@ export default function DevSeedPage() {
               ['Subtasks', result.subtasks],
               ['Tags', result.tags],
               ['Sessions', result.sessions],
+              ['Identities', result.identities],
+              ['Habits', result.habits],
               ['Days covered', result.days],
             ].map(([label, value]) => (
               <div key={label} className="contents">

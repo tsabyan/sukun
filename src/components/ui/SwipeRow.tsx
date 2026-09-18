@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { motion, useMotionValue, type PanInfo } from 'motion/react'
 import { spring } from '@/lib/motion/tokens'
 import { haptic } from '@/lib/utils/haptics'
@@ -33,6 +34,8 @@ const COMMIT_RATIO = 0.5
 export function SwipeRow({ actions, children, className }: SwipeRowProps) {
   const x = useMotionValue(0)
   const [open, setOpen] = useState(false)
+
+  useDevOpen('swipe', () => setOpen(true))
   const committed = useRef(false)
 
   const railWidth = actions.length * ACTION_WIDTH

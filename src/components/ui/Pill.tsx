@@ -2,14 +2,18 @@
 
 import { cn } from '@/lib/utils/cn'
 
-type PillTone = 'neutral' | 'accent' | 'high' | 'medium' | 'low'
+type PillTone = 'neutral' | 'dark' | 'accent' | 'high' | 'medium' | 'low' | 'danger'
 
 const TONES: Record<PillTone, string> = {
-  neutral: 'bg-surface-sunken text-ink-2 border-hairline',
-  accent: 'accent-muted text-accent border-transparent',
+  /** the default: white on grey, or white on the lime hero */
+  neutral: 'bg-surface text-ink border-hairline',
+  /** charcoal — a value the eye should land on, e.g. "Session 3 of 4" */
+  dark: 'bg-ink text-surface border-transparent',
+  accent: 'bg-green-soft text-green-deep border-transparent',
   high: 'bg-priority-high/12 text-priority-high border-transparent',
-  medium: 'bg-priority-medium/12 text-priority-medium border-transparent',
-  low: 'bg-priority-low/12 text-priority-low border-transparent',
+  medium: 'bg-priority-medium/16 text-priority-medium border-transparent',
+  low: 'bg-green-soft text-green-deep border-transparent',
+  danger: 'bg-ember-soft text-ember border-transparent',
 }
 
 export function Pill({
@@ -21,7 +25,7 @@ export function Pill({
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1',
+        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5',
         'text-body-sm font-medium',
         TONES[tone],
         className,
@@ -34,7 +38,8 @@ export function Pill({
 }
 
 /**
- * Selectable chip — tag filters, weekday pickers.
+ * Selectable chip — tag filters, weekday shortcuts, an empty state's next
+ * step. Selected reads charcoal so it never competes with the green action.
  */
 export function ChipButton({
   selected,
@@ -48,10 +53,10 @@ export function ChipButton({
       aria-pressed={selected}
       className={cn(
         'inline-flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3.5',
-        'text-label transition-colors duration-150',
+        'text-body-sm font-medium transition-colors duration-150',
         selected
-          ? 'accent-muted border-transparent text-accent'
-          : 'border-hairline bg-surface text-ink-2 hover:border-hairline-strong hover:text-ink',
+          ? 'border-transparent bg-ink text-surface'
+          : 'border-hairline bg-surface text-ink hover:border-hairline-strong',
         className,
       )}
       {...props}

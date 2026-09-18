@@ -1,6 +1,8 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { PHONE_MAX_WIDTH } from '@/components/shell/AppShell'
+import { devPhoneHeight } from '@/lib/dev/state'
 import { createPortal } from 'react-dom'
 import { AnimatePresence, motion, type PanInfo } from 'motion/react'
 import { cn } from '@/lib/utils/cn'
@@ -10,7 +12,7 @@ interface SheetProps {
   open: boolean
   onClose: () => void
   title?: string
-  /** fractions of viewport height, ascending — docs/05-screens.md S5 */
+  /** fractions of viewport height, ascending — docs/05-screens.md C5 */
   snapPoints?: [number, number] | [number]
   children: React.ReactNode
   /** rendered in the header's right slot */
@@ -77,7 +79,10 @@ export function Sheet({
     restoreFocusTo.current?.focus()
   }, [open])
 
-  const height = `${snapPoints[snapIndex] * 100}dvh`
+  const phoneHeight = devPhoneHeight()
+  const height = phoneHeight
+    ? `${Math.round(snapPoints[snapIndex] * phoneHeight)}px`
+    : `${snapPoints[snapIndex] * 100}dvh`
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
@@ -114,7 +119,7 @@ export function Sheet({
   return createPortal(
     <AnimatePresence>
       {open && (
-        <div className="fixed inset-0 z-50">
+        <div className="fixed inset-0 z-50 flex justify-center">
           <motion.div
             aria-hidden
             initial={{ opacity: 0 }}
@@ -122,7 +127,7 @@ export function Sheet({
             exit={{ opacity: 0 }}
             transition={{ duration: dur.base }}
             onClick={onClose}
-            className="absolute inset-0 bg-black/40 backdrop-blur-[8px]"
+            className="fixed inset-0 bg-ink/45"
           />
 
           <motion.div
@@ -140,26 +145,28 @@ export function Sheet({
             dragElastic={{ top: 0.04, bottom: 0.7 }}
             onDragEnd={handleDragEnd}
             className={cn(
-              'absolute inset-x-0 bottom-0 flex flex-col',
-              'rounded-t-xl border-t border-hairline bg-surface-raised shadow-lg',
-              'focus:outline-none',
+              'absolute bottom-0 flex w-full flex-col rounded-t-xl bg-surface',
+              'shadow-lg focus:outline-none',
               className,
             )}
-            style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+            style={{
+              maxWidth: PHONE_MAX_WIDTH,
+              paddingBottom: 'env(safe-area-inset-bottom)',
+            }}
           >
             {/* grabber */}
             <div className="flex shrink-0 cursor-grab justify-center py-2.5 active:cursor-grabbing">
-              <span className="h-[5px] w-9 rounded-full bg-hairline-strong" />
+              <span className="h-[5px] w-10 rounded-full bg-track" />
             </div>
 
             {(title || action) && (
-              <header className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3">
-                <h2 className="text-title-m font-display text-ink">{title}</h2>
+              <header className="flex shrink-0 items-center justify-between gap-3 px-5 pb-3.5">
+                <h2 className="text-title-m text-ink">{title}</h2>
                 {action}
               </header>
             )}
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-6">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 pb-5">
               {children}
             </div>
           </motion.div>

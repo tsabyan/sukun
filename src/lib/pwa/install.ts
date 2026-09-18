@@ -4,7 +4,7 @@ import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
 
 /**
- * Install affordances — docs/05-screens.md S10, docs/08-deployment.md §5.
+ * Install affordances — docs/05-screens.md A3, docs/08-deployment.md §5.
  *
  * On iOS this matters more than it looks: notifications only work once the app
  * is on the Home Screen, so a Safari user who never installs will never hear a

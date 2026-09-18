@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Check, Plus, X } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
@@ -70,7 +71,7 @@ interface TaskFormSheetProps {
 }
 
 /**
- * One sheet for create and edit — docs/05-screens.md S5.
+ * One sheet for create and edit — docs/05-screens.md C5.
  *
  * Frictionless creation is what drives the session-start rate. A clunky form
  * means fewer Pomodoros ever begin, so everything below the title is optional
@@ -93,6 +94,8 @@ export function TaskFormSheet({
   const [newTag, setNewTag] = useState('')
   const [saving, setSaving] = useState(false)
   const titleRef = useRef<HTMLInputElement>(null)
+
+  useDevOpen('task-discard', () => setConfirmDiscard(true))
 
   const set = <K extends keyof Draft>(key: K, value: Draft[K]) => {
     setDraft((d) => ({ ...d, [key]: value }))

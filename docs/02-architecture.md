@@ -109,24 +109,29 @@ For (3), record the session with `ended_at = endsAt`, not the wake-up time. A se
 ```
 src/
 ├── app/
-│   ├── layout.tsx                 # <html>, theme script, providers, tab bar
-│   ├── page.tsx                   # S1 Focus Timer
-│   ├── plan/page.tsx              # S2 Daily Planner
-│   ├── focus/page.tsx             # S3 Flip Clock (no chrome, no tab bar)
-│   ├── tasks/page.tsx             # S4 Task Manager
-│   ├── tasks/[id]/page.tsx        # S6 Task Details
-│   ├── reports/page.tsx           # S7 Reports & Streaks
-│   ├── records/page.tsx           # S8 Personal Bests
-│   ├── settings/page.tsx          # S9 Settings
+│   ├── layout.tsx                 # <html>, theme script, providers, shell
+│   ├── page.tsx                   # B1 Home — today's tasks + habits
+│   ├── plan/page.tsx              # B8 Plan today
+│   ├── focus/page.tsx             # B3–B6 Focus (no chrome, no tab bar)
+│   ├── tasks/page.tsx             # C1–C3 Tasks
+│   ├── tasks/[id]/page.tsx        # C4 Task detail
+│   ├── habits/page.tsx            # D1–D4 Habits (a client-routed stack)
+│   ├── insights/page.tsx          # E1 Insights
+│   ├── insights/achievements/…    # E3 Achievements
+│   ├── settings/page.tsx          # F1 Settings
 │   ├── auth/callback/route.ts     # magic-link handler
 │   ├── manifest.ts                # PWA manifest
 │   └── api/cron/keepalive/route.ts
 ├── components/
 │   ├── ui/                        # Button, Sheet, Card, Segmented, Toggle, Field…
-│   ├── timer/                     # ProgressRing, FlipClock, PhasePill, Controls
-│   ├── tasks/                     # TaskCard, SubtaskRow, TaskForm, IconPicker
+│   ├── shell/                     # AppShell (phone column + bottom bar), nav
+│   ├── home/                      # NowFocusingBanner, Today's tasks / habits
+│   ├── timer/                     # AttachTaskSheet, TimerEngine, announcer
+│   ├── tasks/                     # TaskRow, SubtaskList, TaskFormSheet, icons
+│   ├── habits/                    # HabitRow, Identity/Habit detail, sheets
+│   ├── insights/                  # FocusBubbles, DaySheet
 │   ├── planner/                   # BlockSection, PlannerRow, AutoPlanButton
-│   └── charts/                    # Heatmap, BarChart, AchievementRing
+│   └── charts/                    # Heatmap
 ├── lib/
 │   ├── db/
 │   │   ├── schema.ts              # Dexie table definitions + versions
@@ -143,8 +148,11 @@ src/
 │   │   ├── machine.ts             # pure phase transition logic (unit tested)
 │   │   └── audio.ts               # AudioContext unlock + chime
 │   ├── stats/
-│   │   ├── aggregate.ts           # heatmap, streaks, personal bests
+│   │   ├── aggregate.ts           # heatmap, daily totals, period ranking
+│   │   ├── insights.ts            # ranges, bars, tag breakdown, records
 │   │   └── achievements.ts        # catalog + unlock evaluation
+│   ├── habits/streaks.ts          # schedules, streaks, 30-day rate
+│   ├── ui/page-action.ts          # the screen's own floating action
 │   ├── planner/autoplan.ts        # bucketing algorithm
 │   └── utils/                     # cn, format, haptics, ids
 ├── workers/ticker.ts

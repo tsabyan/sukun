@@ -1,18 +1,23 @@
 'use client'
 
 import { motion } from 'motion/react'
-import { fromLocalDate } from '@/lib/utils/dates'
-import { formatDuration } from '@/lib/utils/dates'
+import { fromLocalDate, formatDuration } from '@/lib/utils/dates'
+import { cn } from '@/lib/utils/cn'
 import type { HeatmapCell } from '@/lib/db/types'
 
-const CELL = 12
-const GAP = 3
-const STEP = CELL + GAP
+/**
+ * Five discrete steps, not one colour at five opacities — docs/04 §5. The top
+ * step is charcoal so a heavy day still reads at a glance on the grey canvas.
+ */
+const LEVEL_FILL = [
+  'bg-track',
+  'bg-green-soft',
+  'bg-green-mid',
+  'bg-green',
+  'bg-ink',
+] as const
 
-/** Level 0 is a well; 1–4 are the accent at rising opacity. */
-const LEVEL_OPACITY = [0, 0.08, 0.28, 0.48, 0.7, 1] as const
-
-const DAY_LABELS = ['Mon', '', 'Wed', '', 'Fri', '', 'Sun']
+const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 interface HeatmapProps {
   cells: HeatmapCell[]
@@ -21,19 +26,17 @@ interface HeatmapProps {
 }
 
 /**
- * Twelve weeks by seven days, hand-rolled — docs/05-screens.md S7.
+ * Twelve weeks by seven days, hand-rolled — docs/05-screens.md E1.
  *
- * A chart library is forty kilobytes for eighty-four rectangles. Cells stagger
- * in by column once on mount and never animate again; a grid that re-animates
- * on every render is noise.
+ * A chart library is forty kilobytes for eighty-four rectangles. Columns are
+ * weeks and rows are weekdays, both flexible, so the grid fills whatever width
+ * the card has instead of scrolling sideways on a narrow phone.
  */
 export function Heatmap({ cells, weekStartsOn, onSelect }: HeatmapProps) {
   const weeks = Math.ceil(cells.length / 7)
-  const width = weeks * STEP
-  const height = 7 * STEP
 
   // Row labels follow the configured week start, so a Sunday-start user does
-  // not read Monday against their Sunday column.
+  // not read Monday against their Sunday row.
   const labels = Array.from(
     { length: 7 },
     (_, i) => DAY_LABELS[(i + (weekStartsOn === 0 ? 6 : 0)) % 7],
@@ -41,85 +44,82 @@ export function Heatmap({ cells, weekStartsOn, onSelect }: HeatmapProps) {
 
   return (
     <div className="flex gap-2">
-      <div
-        className="flex shrink-0 flex-col justify-between py-[1px]"
-        style={{ height }}
-        aria-hidden
-      >
+      <div className="flex shrink-0 flex-col gap-1.5" aria-hidden>
         {labels.map((label, i) => (
-          <span key={i} className="eyebrow leading-none text-ink-3" style={{ height: CELL }}>
+          <span
+            key={i}
+            className="flex h-3.5 w-2.5 items-center text-[9px] font-medium leading-none text-ink-3"
+          >
             {label}
           </span>
         ))}
       </div>
 
-      <div className="min-w-0 flex-1 overflow-x-auto">
-        <svg
-          width={width}
-          height={height}
-          viewBox={`0 0 ${width} ${height}`}
-          role="img"
-          aria-label={`Focus activity over the last ${weeks} weeks`}
-        >
-          {cells.map((cell, index) => {
-            const column = Math.floor(index / 7)
-            const row = index % 7
-            const date = fromLocalDate(cell.date)
-
-            return (
-              <motion.rect
-                key={cell.date}
-                x={column * STEP}
-                y={row * STEP}
-                width={CELL}
-                height={CELL}
-                rx={3}
-                fill={cell.level === 0 ? 'var(--surface-sunken)' : 'var(--accent)'}
-                fillOpacity={cell.level === 0 ? 1 : LEVEL_OPACITY[cell.level]}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2, delay: column * 0.008 }}
-                onClick={() => onSelect(cell)}
-                className="cursor-pointer outline-none focus-visible:stroke-[var(--accent)] focus-visible:stroke-2"
-                tabIndex={0}
-                role="button"
-              >
-                {/* colour never carries meaning alone — docs/04 §7 */}
-                <title>
-                  {date.toLocaleDateString(undefined, {
-                    weekday: 'short',
-                    month: 'short',
-                    day: 'numeric',
-                  })}
-                  {': '}
-                  {cell.sessions === 0
-                    ? 'no sessions'
-                    : `${cell.sessions} ${cell.sessions === 1 ? 'session' : 'sessions'}, ${formatDuration(cell.focusSeconds)}`}
-                </title>
-              </motion.rect>
-            )
-          })}
-        </svg>
+      <div
+        className="flex min-w-0 flex-1 flex-col gap-1.5"
+        role="img"
+        aria-label={`Focus activity over the last ${weeks} weeks`}
+      >
+        {labels.map((_, row) => (
+          <div key={row} className="flex gap-1.5">
+            {Array.from({ length: weeks }, (_, column) => {
+              const cell = cells[column * 7 + row]
+              if (!cell) return <span key={column} className="h-3.5 min-w-0 flex-1" />
+              return <Cell key={cell.date} cell={cell} column={column} onSelect={onSelect} />
+            })}
+          </div>
+        ))}
       </div>
     </div>
   )
 }
 
-export function HeatmapLegend() {
+function Cell({
+  cell,
+  column,
+  onSelect,
+}: {
+  cell: HeatmapCell
+  column: number
+  onSelect: (cell: HeatmapCell) => void
+}) {
+  const date = fromLocalDate(cell.date)
+  const label = `${date.toLocaleDateString(undefined, {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+  })}: ${
+    cell.sessions === 0
+      ? 'no sessions'
+      : `${cell.sessions} ${cell.sessions === 1 ? 'session' : 'sessions'}, ${formatDuration(cell.focusSeconds)}`
+  }`
+
   return (
-    <div className="flex items-center gap-1.5 text-body-sm text-ink-3">
-      <span>Less</span>
-      {[0, 1, 2, 3, 4].map((level) => (
-        <span
-          key={level}
-          className="block size-3 rounded-[3px]"
-          style={{
-            background: level === 0 ? 'var(--surface-sunken)' : 'var(--accent)',
-            opacity: level === 0 ? 1 : LEVEL_OPACITY[level],
-          }}
-        />
-      ))}
-      <span>More</span>
+    <motion.button
+      type="button"
+      title={label}
+      aria-label={label}
+      onClick={() => onSelect(cell)}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.2, delay: column * 0.008 }}
+      className={cn('h-3.5 min-w-0 flex-1 rounded-[4px]', LEVEL_FILL[cell.level])}
+    />
+  )
+}
+
+/** The scale, and the span it covers. */
+export function HeatmapLegend({ span }: { span?: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3 text-[10px] text-ink-3">
+      <span className="flex items-center gap-1.5">
+        <span>Less</span>
+        {LEVEL_FILL.map((fill, level) => (
+          <span key={level} className={cn('block size-2.5 rounded-[3px]', fill)} />
+        ))}
+        <span>More</span>
+      </span>
+      {span ? <span className="shrink-0 tabular-nums">{span}</span> : null}
     </div>
   )
 }

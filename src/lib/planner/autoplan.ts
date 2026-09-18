@@ -1,7 +1,7 @@
 import type { DayBlock, Priority, Timestamp } from '@/lib/db/types'
 
 /**
- * Auto-plan — docs/05-screens.md S2.
+ * Auto-plan — docs/05-screens.md B8.
  *
  * A pure function over a list of candidates. No Dexie, no clock, no React:
  * the bucketing rules are the interesting part and they need to be testable

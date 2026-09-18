@@ -1,14 +1,34 @@
 # 04 — Design System
 
-## 0. Direction: "Blue Hour"
+## 0. Direction: "Still green"
 
-The reference app is pure black with alarm red. It reads like a countdown to a launch. This one reads like the quiet part of the day when you actually get work done.
+*v2. Supersedes the "Blue Hour" pass — indigo canvas, sea-glass accent,
+Archivo + Instrument Sans. Nothing of it survives but the daylight layer and
+the logomark.*
 
-The palette is drawn from twilight — deep indigo-graphite, cool paper, and a sea-glass accent. Nothing is pure black or pure white. Red appears in exactly one place: destructive confirmation.
+Paper-grey canvas, charcoal ink, and one brand green that carries every
+positive state in the app. Four colours do the whole job:
 
-**Signature element — the Daylight canvas.** The app background carries a near-imperceptible tint that shifts across the day: cool indigo before dawn, neutral at midday, warm at dusk, deep blue at night. It's under 8% opacity — you never consciously see it, but the app at 9am and the app at 11pm do not feel the same. It ties the timer to the planner's Morning / Afternoon / Evening buckets and to the one thing this product is actually about: the passage of a day.
+| | | |
+|---|---|---|
+| `#F0F0F1` | canvas | the page, and every inset well |
+| `#FFFFFF` | surface | cards, sheets, the active tab |
+| `#292A2C` | ink | text, the tab capsule, the "done" step of a scale |
+| `#9CD237` | green | the hero of every screen, and the one floating action |
 
-That's the one risk. Everything else stays disciplined and quiet.
+The move that makes it feel like a product rather than a theme: **one green
+hero card at the top of every screen**, carrying the single number that screen
+is about — today's progress on Home, open tasks on Tasks, hours focused on
+Insights, the streak on a habit. Everything on it is charcoal. Below it,
+white cards on grey, and nothing saturated at all.
+
+Flat green, not a gradient. A gradient hero was tried and read as decoration;
+a flat field reads as a surface with information on it.
+
+Red appears in exactly one place: destructive confirmation.
+
+**Light only.** Dark mode is a mechanical derivation of these tokens so the
+Theme setting that already shipped keeps working; it is not a designed pass.
 
 ---
 
@@ -36,19 +56,19 @@ Spec:
 - Circle, 2px stroke at 24px, scaling to 8% of the total size.
 - **Open at the top-right, 40° gap**, starting at 12 o'clock. The gap is what distinguishes it from a plain circle and what makes it read as a ring in progress.
 - `stroke-linecap: round`.
-- Stroke uses `--accent`, so the logomark re-tints with the timer phase — sea-glass during focus, apricot during a break. The app icon stays locked to the focus sea-glass.
+- Stroke uses `currentColor`, so the logomark re-tints with whatever it sits in — brand green on the charcoal home tile, charcoal on a green card.
 - One SVG, used at every size. No separate simplified mark; it's already the simplest thing it can be.
 
 ### Wordmark
 
-`sukun` set in **Archivo, wght 600, wdth 112**, all lowercase, tracking `-0.02em`. Lowercase because the word means quiet and small caps would be shouting.
+`sukun` set in **Outfit, wght 600**, all lowercase, tracking `-0.02em`. Lowercase because the word means quiet and small caps would be shouting.
 
 The mark sits to the left of the wordmark at 1.2× the cap height, with a gap of 0.4× the cap height. In the app header, the mark can also float above the *u* as the diacritic actually would — a nice detail for the marketing site, too clever for the product UI. Use the side-by-side lockup in-app.
 
 ### App icon
 
 - Background: `--canvas` dark (`#0F1216`) in both themes. The icon does not follow the system theme; a home screen icon that changes is a home screen icon nobody finds.
-- Mark centered at 44% of the icon width, in focus sea-glass `#63C9B6`.
+- Mark centered at 44% of the icon width, in brand green `#9CD237` on charcoal `#292A2C`.
 - Maskable variant: same, with the mark at 34% to survive the safe-area crop.
 - Favicon: the mark alone, 2.5px stroke at 32px so it doesn't disappear in a tab strip.
 
@@ -74,71 +94,79 @@ Before the domain purchase: check `sukun.app`, `sukun.so`, `getsukun.com`, and r
 
 ### Neutrals
 
-Blue-leaning graphite, never neutral-grey and never pure black. Warm creams are deliberately avoided — they fight the twilight accent.
+Warm-neutral paper and charcoal. Nothing is pure black; the canvas and the
+inset "field" are deliberately the same grey, so a well reads as a hole in the
+card rather than a second surface.
 
 ```css
-/* Dark (default) */
---canvas:          #0F1216;   /* page background */
---surface:         #171B21;   /* cards, list rows */
---surface-raised:  #1E242B;   /* sheets, popovers, pressed states */
---surface-sunken:  #0B0E12;   /* wells, inset tracks */
---hairline:        rgb(255 255 255 / 0.07);
---hairline-strong: rgb(255 255 255 / 0.12);
---text-primary:    #EDF0F3;
---text-secondary:  #98A2AE;
---text-tertiary:   #67717D;
-
-/* Light */
---canvas:          #F4F6F8;   /* cool paper */
---surface:         #FFFFFF;
---surface-raised:  #FFFFFF;
---surface-sunken:  #EAEEF2;
---hairline:        rgb(15 18 22 / 0.08);
---hairline-strong: rgb(15 18 22 / 0.14);
---text-primary:    #12161B;
---text-secondary:  #5A6572;
---text-tertiary:   #8B95A1;
+--canvas:          #F0F0F1;   /* page background */
+--surface:         #FFFFFF;   /* cards, sheets, active tab */
+--surface-sunken:  #F0F0F1;   /* wells */
+--field:           #F0F0F1;   /* inputs, icon tiles, inset lists */
+--track:           #E2E3E6;   /* progress tracks, the empty heat cell */
+--hairline:        rgb(41 42 44 / 0.09);
+--hairline-strong: rgb(41 42 44 / 0.16);
+--text-primary:    #292A2C;
+--text-secondary:  #6F7176;
+--text-tertiary:   #A4A6AB;
 ```
 
-### Accents
+### Brand green
 
-One accent per timer phase. The accent is the *only* saturated color on screen at any moment.
-
-| Role | Name | Light | Dark |
-|------|------|-------|------|
-| Focus phase | **Seaglass** | `#3FA694` | `#63C9B6` |
-| Short break | **Apricot** | `#D98E5F` | `#EFA97A` |
-| Long break | **Iris** | `#7A80D0` | `#9AA0E8` |
-| Destructive only | **Ember** | `#D4503C` | `#E5624F` |
+One hue, four steps. They are a *scale*, not four accents: the heat grid, the
+focus bubbles and the badge states all read along it.
 
 ```css
---accent:        /* set per phase, swapped on the root */
---accent-muted:  color-mix(in oklch, var(--accent) 18%, transparent);
---accent-quiet:  color-mix(in oklch, var(--accent) 9%,  transparent);
---on-accent:     #0B0E12; /* text and icons ON an accent fill, both themes */
+--lime:       #E3F786;   /* the lightest step — chips on green */
+--green:      #9CD237;   /* the brand. Heroes, the FAB, "done" */
+--green-mid:  #C8E691;   /* the middle of the heat scale */
+--green-deep: #5E8F12;   /* green text and glyphs on a pale green fill */
+--green-soft: #F1FAD6;   /* the palest wash — unlocked badges, streak pills */
 ```
 
-**`--on-accent` is fixed dark in both themes, and does not follow `--canvas`.** Near-white on light-mode sea-glass measures **2.73:1** — a real contrast failure on every primary button, caught by Lighthouse. The fixed ink gives 6.3:1 in light and 9.8:1 in dark. Anything sitting on an accent fill uses it.
+The heat scale, in order: `--track` → `--green-soft` → `--green-mid` →
+`--green` → `--text-primary`. The top step is charcoal on purpose. Five steps
+of one green cannot be told apart on a phone in daylight, and the heaviest day
+of a quarter deserves to be legible.
 
-Swapping `--accent` on `<html>` when the phase changes re-tints the ring, the play button, the active tab, and focus outlines in one shot. Transition it over 480ms so the phase change reads as a mood shift, not a repaint.
+### Phase accents
+
+The phase is carried by the *surface* — a green focus screen, a charcoal break
+screen — so the accent only shifts a shade underneath.
+
+| Role | Token | Value |
+|------|-------|-------|
+| Focus | `--accent-focus` | `#9CD237` |
+| Short break | `--accent-short-break` | `#E3F786` |
+| Long break | `--accent-long-break` | `#5E8F12` |
+| Destructive only | `--accent-ember` | `#E5484D` |
+
+`--accent` is registered with `@property` so swapping it on `<html>` cross-fades
+over 480ms instead of snapping.
+
+**`--on-accent` is charcoal (`#292A2C`) and never follows the theme.** The
+brand greens are light: charcoal measures **7.6:1** on `--green` and
+**12.4:1** on `--lime`. Near-white on either fails at any size.
 
 ### Priority dots
 
 Small dots and left rails only. Never a filled row, never a background.
 
 ```css
---priority-high:   #E0685A;
---priority-medium: #E3A857;
---priority-low:    #6FA8A0;
+--priority-high:   #E5484D;
+--priority-medium: #E8A33D;
+--priority-low:    #9CD237;
 ```
 
 ### Task colors
 
-Eight muted options for the task icon tile. All are desaturated on purpose — a list of twelve tasks should look like a list, not a paint chart.
+Eight options for the task icon tile. The *names* are persisted in Postgres (a
+CHECK constraint on `sukun.tasks.color`), so the set is fixed; v2 only retunes
+the values. `sage` is the brand green and the default, `moss` its lime sibling.
 
 ```
-sage    #7BA098    slate   #7C8B9E    iris   #8E93D9    apricot #DDA077
-clay    #C08370    moss    #8AA06E    fog    #9AA3AD    plum    #A085B0
+sage    #9CD237    slate   #7C8B9E    iris   #8E93D9    apricot #DDA077
+clay    #C08370    moss    #C7E35E    fog    #9AA3AD    plum    #A085B0
 ```
 
 ### Daylight tint (the signature)
@@ -166,36 +194,38 @@ Same four values tint the Morning / Afternoon / Evening headers in the planner, 
 
 ## 2. Typography
 
-Two families. One is the instrument voice, one is the human voice.
+One family. **Outfit Variable**, self-hosted through `next/font/google` as
+`--font-outfit`.
 
-| Role | Face | Setting |
-|------|------|---------|
-| **Timer numerals, headings** | **Archivo Variable** | `wdth 112`, `wght 500–650`, `font-variant-numeric: tabular-nums`, tracking `-0.03em` at display sizes |
-| **Body, labels, buttons** | **Instrument Sans Variable** | `wght 400–600`, tracking `0` |
-| **Eyebrows, data labels, axes** | **Archivo Variable** condensed | `wdth 87`, `wght 600`, `uppercase`, tracking `+0.14em`, 11px |
+Two families were tried — a condensed instrument face for numbers, a humanist
+face for prose — and the seam between them showed on every card that had both.
+Outfit does both jobs because its weight axis is wide enough to carry the
+distinction on its own: big numbers are *light*, anything read as a sentence is
+regular, anything read as a label is medium. Weight, not family, is the voice.
 
-Why: Archivo's width axis gives you a mechanical, instrument-panel voice for numbers and data — which is exactly what a split-flap board and a heatmap axis are — while Instrument Sans keeps prose humane and quiet. One expanded face for the clock, one condensed face for the labels, one humanist face for everything a person reads as a sentence. Avoids the system-font look without importing four families.
-
-Both are on Google Fonts, both variable. Self-host via `next/font/google` with `display: 'swap'` and preload the two axes you actually use.
+Its lining figures are already even-width; `tabular-nums` is declared anyway so
+a fallback family locks its digits too.
 
 ### Scale
 
 ```
-display-xl   72px / 0.9  / -0.04em   Archivo 600   flip-clock digits
-display-l    56px / 0.95 / -0.035em  Archivo 600   ring countdown (mobile)
-display-m    40px / 1.0  / -0.03em   Archivo 600   stat hero numbers
-title-l      24px / 1.2  / -0.02em   Archivo 600   screen titles
-title-m      18px / 1.3  / -0.01em   Instrument 600
-body         15px / 1.5  /  0        Instrument 400
-body-sm      13px / 1.45 /  0        Instrument 400  secondary rows
-label        13px / 1.2  /  0        Instrument 500  buttons, tabs
-eyebrow      11px / 1.0  / +0.14em   Archivo 600 condensed, uppercase
+display-xl   96px / 1.0  / -0.04em   300   the focus countdown
+display-l    64px / 1.0  / -0.03em   300
+display-m    44px / 1.0  / -0.025em  300   hero numbers
+display-s    34px / 1.0  / -0.02em   300   stat tiles
+title-l      24px / 1.15 / -0.02em   500   screen titles
+title-m      20px / 1.25 / -0.015em  500   sheet titles, detail names
+title-s      15px / 1.3  /  0        500   card heads
+body         14px / 1.5  /  0        400
+body-sm      12px / 1.45 /  0        400   row meta, chip labels
+label        13px / 1.2  /  0        500   buttons, tabs
+eyebrow      11px / 1.0  / +0.10em   500   uppercase field labels
 ```
 
-The ring countdown scales with `clamp(56px, 14vw, 88px)`. The flip-clock digits with `clamp(72px, 22vw, 180px)`.
-
 **Rules**
-- Every number that changes over time is `tabular-nums`. Non-negotiable — a countdown that shifts width is the single most amateur thing a timer app can do.
+- Every number that changes over time is `tabular-nums`. Non-negotiable — a
+  countdown that shifts width is the single most amateur thing a timer app can
+  do.
 - Never more than three type sizes visible in one card.
 - Sentence case everywhere except eyebrows.
 
@@ -205,44 +235,46 @@ The ring countdown scales with `clamp(56px, 14vw, 88px)`. The flip-clock digits 
 
 ### Spacing — 4pt base
 
-`2 · 4 · 6 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 56 · 72`
+`2 · 4 · 6 · 8 · 12 · 14 · 16 · 18 · 20 · 24 · 32 · 40 · 56`
 
-Screen gutter: 20px mobile, 32px tablet, 40px desktop. Card padding: 16px compact, 20px default. Vertical rhythm between sections: 24px.
+Screen gutter: **16px, at every width** — there is one layout. Card padding 16px,
+hero padding 18px. Vertical rhythm between the blocks of a screen: 14px.
 
 ### Radius
 
 iOS continuous corners. Larger than feels right at first.
 
 ```
---r-sm:   10px   chips, dots, small controls
---r-md:   14px   inputs, buttons
---r-lg:   20px   cards, list rows
---r-xl:   28px   sheets, modals, hero cards
---r-full: 999px  pills, FAB, avatars
+--r-sm:   12px   chips, small tiles, inset lists
+--r-md:   16px   inputs, buttons, icon tiles
+--r-lg:   22px   cards, list cards
+--r-xl:   28px   sheets, hero cards, the add menu
+--r-full: 999px  pills, the tab capsule, the floating action
 ```
 
-Icon tiles use a squircle SVG mask, not `border-radius` — that's the detail that reads as iOS rather than "rounded rectangle."
+Task icon tiles use a squircle SVG path, not `border-radius` — that's the
+detail that reads as iOS rather than "div with a border radius".
 
 ### Depth
 
-Shadows are tinted with the canvas hue, layered, and low. In dark mode depth comes from *surface lightness*, not shadow — a dark card with a black shadow is invisible.
+Charcoal-tinted, shallow, and few. Cards lift; they do not float. There is no
+border *and* a shadow — on a grey canvas that reads as two edges.
 
 ```css
---shadow-sm: 0 1px 2px rgb(11 14 18 / 0.06), 0 1px 1px rgb(11 14 18 / 0.04);
---shadow-md: 0 4px 12px rgb(11 14 18 / 0.08), 0 1px 3px rgb(11 14 18 / 0.06);
---shadow-lg: 0 16px 40px rgb(11 14 18 / 0.16), 0 4px 12px rgb(11 14 18 / 0.10);
-
-/* dark mode: shadows near-off, hairlines carry the separation */
-[data-theme='dark'] {
-  --shadow-sm: 0 1px 0 rgb(255 255 255 / 0.04) inset;
-  --shadow-md: 0 8px 24px rgb(0 0 0 / 0.40);
-  --shadow-lg: 0 24px 64px rgb(0 0 0 / 0.55);
-}
+--shadow-sm:  0 1px 2px  rgb(41 42 44 / 0.04);
+--shadow-md:  0 2px 12px rgb(41 42 44 / 0.05);   /* every card */
+--shadow-lg:  0 8px 28px rgb(41 42 44 / 0.12);   /* sheets, the tab capsule */
+--shadow-fab: 0 8px 24px rgb(156 210 55 / 0.35); /* the one green action */
 ```
+
+The floating action is the only element with a *coloured* shadow. It is the
+only element that is allowed to look like it is above the page.
 
 ### Translucency
 
-Tab bar, sheet headers, and the flip-clock control rail use iOS-style material:
+Sheet headers and control rails use iOS-style material. The tab capsule does
+not — it is opaque charcoal, because a blurred bar over a green hero reads as
+smudged rather than as glass:
 
 ```css
 .material {
@@ -281,13 +313,12 @@ export const dur = { fast: 0.15, base: 0.22, slow: 0.32, ambient: 0.48 }
 | Start / pause | Play↔pause icon morphs; FAB scales 0.94 on press with `snappy` |
 | Sheet present | Slide from bottom with `ease.ios`, 320ms; backdrop fades to 40% |
 | Task complete | Row checkbox fills with `snappy`, title strikes through over 200ms, row fades out after 400ms |
-| Flip-clock digit | 3D `rotateX` split-flap, 380ms, with a mid-flip shadow pass |
 | Heatmap load | Cells fade in with 8ms stagger by column — one pass, on mount only |
 | Tab change | No transition. Instant. |
 
 **Never:** confetti, bouncing, pulsing "streak at risk" warnings, spinning loaders longer than 400ms, anything that animates on every render.
 
-`@media (prefers-reduced-motion: reduce)` collapses every spring to a 120ms opacity fade and disables the flip animation (digits swap instantly).
+`@media (prefers-reduced-motion: reduce)` collapses every spring to a 120ms opacity fade.
 
 ### Haptics
 
@@ -300,54 +331,127 @@ export const dur = { fast: 0.15, base: 0.22, slow: 0.32, ambient: 0.48 }
 
 ## 5. Component recipes
 
+### Hero card
+
+The signature. One per screen, always the first thing under the header, always
+the single number that screen is about.
+
+`--green`, radius `--r-xl`, 18px padding, 16px gaps, everything charcoal. Title
+(title-s) and an optional charcoal pill on the left/right of the head row; then
+the number at `display-m` in weight 300 with a `body-sm` line beside its
+baseline; then whatever the screen needs — seven bars, a progress track, mini
+panels at `rgb(255 255 255 / 0.55)`.
+
+**Week bars** — seven bars, values 0–1, `rounded-full`, white at 90% when the
+day has something and 55% when it does not. A zero day still draws an 8% stub:
+a gap is information, an absence is a rendering bug.
+
+### Stat tile
+
+White, radius `--r-lg`, `--shadow-md`, 128px tall, two per row. The number at
+`display-s`/300 top-left, an `ArrowUpRight` top-right **only when the tile goes
+somewhere**, and the label at the bottom in `body-sm`. The label is a phrase,
+not a heading: "day streak · best is 14".
+
+### Bottom bar
+
+Charcoal capsule, 62px, radius `--r-full`, `--shadow-lg`, 6px inner padding,
+floating in the 16px gutter 10px above the safe-area inset. Two tabs either
+side of a 56px gap. Active tab: a white 50px circle behind the icon, slid
+between tabs with Motion's `layoutId`. Inactive: the icon at 70% white.
+
+### The floating action
+
+A 56px `--green` circle in that gap, raised 15px out of the capsule, with
+`--shadow-fab`. Icon only, 26px, charcoal; the label is its `aria-label`.
+
+It belongs to the **screen**, not the shell: pages register one through
+`usePageAction` and the shell renders whatever is there. The gap keeps its
+width when no action is registered, so the tabs never shift between routes.
+
 ### Button
 
 | Variant | Fill | Text | Use |
 |---------|------|------|-----|
-| primary | `--accent` | canvas | one per screen, max |
-| secondary | `--surface-raised` | text-primary | everything else |
+| primary | `--text-primary` | surface (glyphs `--green`) | the confirming action of a sheet |
+| accent | `--green` | `--on-accent` | start / resume |
+| secondary | `--surface` + hairline | text-primary | everything else |
 | ghost | transparent | text-secondary | tertiary, icon buttons |
-| destructive | transparent, `--priority-high` text | Ember | delete, reset |
+| destructive | `--surface`, `--accent-ember` text | Ember | delete, reset |
 
-Height 44px (iOS touch target), radius `--r-md`, label 13px/500. Press: `scale(0.97)` + 6% overlay, `snappy`. Disabled: 38% opacity, no pointer events.
+Height 44px (iOS touch target), radius `--r-full`, label 13px/500. Press:
+`scale(0.97)`, `snappy`. Disabled: 38% opacity, no pointer events.
 
 ### Card
 
-`--surface`, radius `--r-lg`, 1px `--hairline` border, `--shadow-sm`, padding 20px. Interactive cards get `--shadow-md` and a 1px `--hairline-strong` border on hover; on press, `scale(0.99)`.
+`--surface`, radius `--r-lg`, `--shadow-md`, no border, padding 16px. Card head
+is a title on the left and, on the right, a quiet white chip and/or a 32px
+charcoal `+` for the list the card owns — **the "+" lives beside the count it
+adds to**, never in the screen header.
 
 ### List row
 
-Min height 60px, 16px horizontal padding, hairline separator inset 16px from the left (iOS inset separator). Swipe left reveals complete / delete on touch; hover reveals the same actions on pointer devices.
+Min height 54–64px, no separators inside a card: the 40px icon tile and the
+row's own padding do that work. Swipe left reveals complete / delete on touch.
+
+### Chip / pill
+
+Radius `--r-full`, 12px horizontal padding, `body-sm`/500, 29px tall.
+White + hairline by default; charcoal with white text when it carries a value
+the eye should land on ("Session 3 of 4", the weekday on a hero).
 
 ### Bottom sheet
 
-Radius `--r-xl` top corners only, `--surface-raised`, grabber pill 36×5px at `--hairline-strong`, safe-area bottom padding. Snap points `['60%', '95%']`. Backdrop `rgb(0 0 0 / 0.4)` with 8px blur. Drag-to-dismiss below 40% of the current snap.
+Radius `--r-xl` top corners only, `--surface`, grabber 40×5px at `--track`,
+safe-area bottom padding. Snap points `[0.6, 0.95]` of viewport height. Backdrop
+`--text-primary` at 45%. Drag-to-dismiss below 40% of the current snap.
+
+### Action sheet
+
+Not a Sheet: a short charcoal panel that rises out of the button that spawned
+it and sits directly above the bar, so the thumb never travels. Used where one
+screen's "+" has more than one meaning. Title `title-m` in surface, rows of a
+44px coloured circle plus two lines.
 
 ### Segmented control
 
-The iOS pill: track is `--surface-sunken` with radius `--r-full` and 3px padding; the active thumb is `--surface` with `--shadow-sm`, animated with Motion's `layoutId` so it slides between segments. Labels 13px/500, inactive at `--text-secondary`.
+White track with a hairline, radius `--r-full`, 4px padding; the thumb is
+`--text-primary` and slides with a transform (a percentage of its own width,
+which lands exactly on each segment where `layoutId` snapped under Next 16).
+Labels `body-sm`/500, inactive `--text-secondary`, active `--surface`.
 
 ### Progress ring
 
-- Track: 10px stroke, `--hairline`.
-- Progress: 10px stroke, `--accent`, `stroke-linecap: round`, rotated -90° so it starts at 12 o'clock.
-- Drive `stroke-dashoffset` from a single `requestAnimationFrame` loop, not React state. Ring updates at 60fps; the digits update at 1Hz. They are separate render paths.
-- **No glow.** The reference app's red bloom is the loudest thing on its screen. Here the ring is a 10px line and it's enough.
-- Inside: eyebrow (`FOCUS · 3 OF 4`), countdown, then a quiet line of context (task title, or "No task attached").
+Still specified, still unused on any screen: the focus screen is a number and a
+line. Kept because a ring is the obvious answer if a compact widget ever needs
+one.
 
-### Flip clock digit
+- Track: 10px stroke, `--hairline`. Progress: 10px, `--accent`, round cap,
+  rotated -90° so it starts at 12 o'clock.
+- Drive `stroke-dashoffset` from a single `requestAnimationFrame` loop, not
+  React state. **No glow.**
 
-Two stacked halves per digit, `perspective: 800px`, top half rotates on `rotateX` from 0° to -90° while the incoming bottom half rotates 90° → 0°. A `linear-gradient` overlay darkens the flap through the middle of the animation for physical depth. A 1px hairline splits the card horizontally — that seam is what sells it.
+### Heat cell
 
-### Heatmap cell
+Flexible width, 14px tall, radius 4px, 6px gaps — the grid fills the card
+rather than scrolling sideways on a narrow phone. Five discrete fills, never
+one colour at five opacities:
 
-12px square, radius 3px, 3px gap. Intensity is opacity of `--accent` at 5 steps: `0.08 / 0.28 / 0.48 / 0.70 / 1.0`. Level 0 is `--surface-sunken`. Legend reads `Less ▢▢▢▢▢ More`. Tapping a cell opens that day's session list.
+```
+0  --track        1  --green-soft   2  --green-mid
+3  --green        4  --text-primary
+```
+
+Legend reads `Less ▢▢▢▢▢ More` on the left and the date span on the right.
+Tapping a cell opens that day's session list.
 
 ---
 
 ## 6. Iconography
 
-Lucide, 20px default (24px for tab bar, 18px inline), `stroke-width: 1.75`. Never mix in another icon set. Task icon tiles: 36×36 squircle at 12% of the task color, icon at full task color.
+Lucide, 20px default (22px for tab bar, 26px for the floating action, 18px
+inline), `stroke-width: 1.75`. Never mix in another icon set. Task icon tiles:
+36×36 squircle at 14% of the task color, icon at full task color.
 
 ---
 
@@ -356,11 +460,15 @@ Lucide, 20px default (24px for tab bar, 18px inline), `stroke-width: 1.75`. Neve
 Not optional, not a phase-9 task.
 
 - Body text ≥ 4.5:1, large text and UI borders ≥ 3:1. `--text-tertiary` is metadata only, never load-bearing.
-- Every interactive element has a visible focus ring: 2px `--accent`, 2px offset. Never `outline: none` without a replacement.
+- Every interactive element has a visible focus ring: 2px `--text-primary`, 2px
+  offset. Ink rather than accent — the greens are too light to read as a ring on
+  white, and the ring has to survive on a green hero too. Never `outline: none`
+  without a replacement.
 - Touch targets ≥ 44×44 including the FAB and every icon button.
 - The timer announces phase changes via `aria-live="polite"`; the countdown itself is `aria-hidden` (a screen reader announcing every second is unusable) with a readable summary alongside.
 - Color never carries meaning alone — priority has a dot *and* a label; heatmap cells have title text with the date and count.
-- Full keyboard path on desktop: `Space` start/pause, `S` skip, `F` flip mode, `N` new task, `Esc` closes sheets.
+- Full keyboard path: `Space` start/pause, `S` skip, `N` new task, `Esc` closes
+  sheets.
 
 ---
 
@@ -372,18 +480,24 @@ Tokens live in CSS; Tailwind reads them. One source of truth.
 /* src/styles/globals.css */
 @import "tailwindcss";
 
-@theme {
-  --color-canvas:         var(--canvas);
-  --color-surface:        var(--surface);
-  --color-surface-raised: var(--surface-raised);
-  --color-accent:         var(--accent);
-  --color-ink:            var(--text-primary);
-  --color-ink-2:          var(--text-secondary);
-  --color-ink-3:          var(--text-tertiary);
-  --radius-lg:            20px;
-  --radius-xl:            28px;
-  --font-display:         var(--font-archivo);
-  --font-sans:            var(--font-instrument);
+@theme inline {
+  --color-canvas:      var(--canvas);
+  --color-surface:     var(--surface);
+  --color-field:       var(--field);
+  --color-track:       var(--track);
+  --color-accent:      var(--accent);
+  --color-green:       var(--green);
+  --color-green-mid:   var(--green-mid);
+  --color-green-soft:  var(--green-soft);
+  --color-green-deep:  var(--green-deep);
+  --color-ink:         var(--text-primary);
+  --color-ink-2:       var(--text-secondary);
+  --color-ink-3:       var(--text-tertiary);
+  --radius-lg:         var(--r-lg);
+  --radius-xl:         var(--r-xl);
+  /* one family, two roles — both resolve to Outfit */
+  --font-display:      var(--font-outfit);
+  --font-sans:         var(--font-outfit);
 }
 
 :root { color-scheme: light; /* light tokens */ }

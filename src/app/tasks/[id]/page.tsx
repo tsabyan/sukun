@@ -1,15 +1,29 @@
 'use client'
 
-import { use, useState } from 'react'
+import { use, useCallback, useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { ChevronLeft, Flag, Pencil, Play, Share, Timer, Trash2 } from 'lucide-react'
-import { Card, SectionLabel } from '@/components/ui/Card'
+import {
+  ChevronLeft,
+  Flag,
+  Pencil,
+  Play,
+  Share,
+  StickyNote,
+  Timer,
+  Trash2,
+} from 'lucide-react'
+import { Card, CardHead } from '@/components/ui/Card'
 import { Button, IconButton } from '@/components/ui/Button'
-import { Pill, PriorityDot } from '@/components/ui/Pill'
+import { HeroCard } from '@/components/ui/HeroCard'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { toast } from '@/components/ui/Toast'
+import { PageHeader } from '@/components/shell/PageHeader'
+import { useHideFab } from '@/lib/ui/fab'
 import { TaskIconTile } from '@/components/tasks/TaskIconTile'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { SubtaskList } from '@/components/tasks/SubtaskList'
@@ -24,6 +38,7 @@ import {
 } from '@/lib/db/repo'
 import { useTimerStore } from '@/lib/timer/store'
 import { formatDuration } from '@/lib/utils/dates'
+import { cn } from '@/lib/utils/cn'
 import type { Session } from '@/lib/db/types'
 
 const HISTORY_PREVIEW = 10
@@ -44,6 +59,20 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showAllHistory, setShowAllHistory] = useState(false)
 
+  useDevOpen('task-edit', () => setEditOpen(true))
+  useDevOpen('task-delete', () => setConfirmDelete(true))
+
+  const startSession = useCallback(() => {
+    if (!task) return
+    useTimerStore.getState().attachTask(task.id, task.title)
+    useTimerStore.getState().start()
+    router.push('/focus')
+  }, [task, router])
+
+  // The bottom bar's button means "add" everywhere; starting a session on
+  // *this* task belongs on the screen, under the progress it moves.
+  useHideFab()
+
   if (task === undefined) return <div className="h-40 animate-pulse rounded-lg bg-hairline" />
 
   if (!task || task.deletedAt !== null) {
@@ -55,12 +84,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         </Link>
       </div>
     )
-  }
-
-  const startSession = () => {
-    useTimerStore.getState().attachTask(task.id, task.title)
-    useTimerStore.getState().start()
-    router.push('/')
   }
 
   const copyAsJson = async () => {
@@ -88,100 +111,159 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     .filter((s) => s.mode === 'focus')
     .reduce((sum, s) => sum + s.actualDurationSec, 0)
 
+  const estimateLeft = Math.max(0, task.estimatedPomodoros - task.completedPomodoros)
+  const doneRatio =
+    task.estimatedPomodoros > 0
+      ? Math.min(1, task.completedPomodoros / task.estimatedPomodoros)
+      : 0
+
   return (
-    <div className="flex flex-col gap-6">
-      <header className="flex items-center justify-between">
-        <Link
-          href="/tasks"
-          aria-label="Back to tasks"
-          className="inline-flex size-11 items-center justify-center rounded-full text-ink-2 hover:text-ink"
-        >
-          <ChevronLeft size={22} strokeWidth={1.75} />
-        </Link>
-
-        <div className="flex items-center gap-1">
-          <IconButton label="Copy as JSON" onClick={() => void copyAsJson()}>
-            <Share size={18} strokeWidth={1.75} />
-          </IconButton>
-          <IconButton label="Edit task" onClick={() => setEditOpen(true)}>
-            <Pencil size={18} strokeWidth={1.75} />
-          </IconButton>
-          <IconButton
-            label="Delete task"
-            variant="destructive"
-            onClick={() => setConfirmDelete(true)}
+    <div className="flex flex-col gap-3.5">
+      <PageHeader
+        title="Task"
+        leading={
+          <Link
+            href="/tasks"
+            aria-label="Back to tasks"
+            className="inline-flex size-11 items-center justify-center rounded-full bg-surface text-ink shadow-sm"
           >
-            <Trash2 size={18} strokeWidth={1.75} />
-          </IconButton>
-        </div>
-      </header>
+            <ChevronLeft size={20} strokeWidth={1.75} />
+          </Link>
+        }
+        actions={
+          <>
+            <IconButton label="Copy as JSON" onClick={() => void copyAsJson()}>
+              <Share size={18} strokeWidth={1.75} />
+            </IconButton>
+            <IconButton label="Edit task" onClick={() => setEditOpen(true)}>
+              <Pencil size={18} strokeWidth={1.75} />
+            </IconButton>
+          </>
+        }
+      />
 
-      <Card className="flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <TaskIconTile icon={task.icon} color={task.color} size={44} />
-          <div className="min-w-0 flex-1">
-            <h1 className="text-title-l font-display text-ink">{task.title}</h1>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Pill tone={task.priority}>
-                <Flag size={12} strokeWidth={2} aria-hidden />
-                {task.priority} priority
-              </Pill>
-              {task.status === 'completed' && <Pill>Completed</Pill>}
-              {tagNames?.map((tag) => <Pill key={tag.id}>{tag.name}</Pill>)}
-            </div>
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center gap-3">
+          <TaskIconTile icon={task.icon} color={task.color} size={52} />
+          <h1 className="min-w-0 flex-1 text-title-l text-ink">{task.title}</h1>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-2">
+          <Pill tone={task.priority}>
+            <Flag size={12} strokeWidth={2} aria-hidden />
+            {task.priority} priority
+          </Pill>
+          {task.status === 'completed' && <Pill tone="accent">Completed</Pill>}
+          {task.plannedDate ? <Pill>Planned</Pill> : <Pill>Not planned</Pill>}
+          {tagNames?.map((tag) => (
+            <Pill key={tag.id} tone="dark">
+              {tag.name}
+            </Pill>
+          ))}
+        </div>
+      </div>
+
+      <HeroCard
+        title="Progress"
+        chip={
+          <Pill tone="dark">
+            {task.completedPomodoros} of {task.estimatedPomodoros} sessions
+          </Pill>
+        }
+        value={focusedSeconds > 0 ? formatDuration(focusedSeconds) : '0m'}
+        sub={
+          estimateLeft > 0
+            ? `focused · about ${formatDuration(estimateLeft * 25 * 60)} left`
+            : 'focused · estimate met'
+        }
+      >
+        <div className="flex flex-col gap-2.5">
+          <div className="on-hero h-3 w-full overflow-hidden rounded-full">
+            <div
+              className="h-full rounded-full bg-ink transition-[width] duration-500"
+              style={{ width: `${Math.round(doneRatio * 100)}%` }}
+            />
+          </div>
+          <div className="flex gap-3.5 text-body-sm">
+            <span className="inline-flex items-center gap-1.5 tabular-nums">
+              <span aria-hidden className="size-2 rounded-full bg-ink" />
+              {task.completedPomodoros} done
+            </span>
+            <span className="inline-flex items-center gap-1.5 tabular-nums">
+              <span aria-hidden className="on-hero-strong size-2 rounded-full" />
+              {estimateLeft} left
+            </span>
           </div>
         </div>
+      </HeroCard>
 
-        {task.description && <p className="text-body text-ink-2">{task.description}</p>}
-
-        <div className="flex items-center gap-4 text-body-sm text-ink-2">
-          <span className="inline-flex items-center gap-1.5 tabular-nums">
-            <Timer size={14} strokeWidth={1.75} aria-hidden />
-            {task.completedPomodoros} of {task.estimatedPomodoros} pomodoros
-          </span>
-          {focusedSeconds > 0 && <span>{formatDuration(focusedSeconds)} focused</span>}
-        </div>
-
-        {task.status === 'active' && (
-          <Button variant="primary" fullWidth onClick={startSession}>
-            <Play size={18} strokeWidth={1.75} fill="currentColor" />
-            Start focus session
-          </Button>
-        )}
-      </Card>
+      {task.status === 'active' && (
+        <Button variant="accent" size="lg" fullWidth onClick={startSession}>
+          <Play size={18} strokeWidth={2} fill="currentColor" aria-hidden />
+          Start a session
+        </Button>
+      )}
 
       <SubtaskList taskId={task.id} />
 
-      <section className="flex flex-col gap-3">
-        <SectionLabel className="mb-0">Sessions on this task</SectionLabel>
+      {task.description ? (
+        <Card className="flex flex-col gap-2.5">
+          <CardHead title="Notes" />
+          <p className="whitespace-pre-line text-body text-ink-2">{task.description}</p>
+        </Card>
+      ) : (
+        <Card padding="none" className="py-2">
+          <EmptyState
+            icon={StickyNote}
+            title="No notes"
+            body="Add context, links, or a definition of done."
+            action={
+              <Button variant="secondary" size="sm" onClick={() => setEditOpen(true)}>
+                Add notes
+              </Button>
+            }
+          />
+        </Card>
+      )}
+
+      <Card className="flex flex-col gap-2.5" padding="default">
+        <CardHead title="Recent sessions">
+          {sessions.length > HISTORY_PREVIEW && !showAllHistory && (
+            <button
+              type="button"
+              onClick={() => setShowAllHistory(true)}
+              className="text-body-sm font-medium text-green-deep"
+            >
+              See all {sessions.length}
+            </button>
+          )}
+        </CardHead>
 
         {sessions.length === 0 ? (
-          <Card padding="compact">
-            <p className="text-body-sm text-ink-2">
-              No sessions yet. Start one and it will show up here.
-            </p>
-          </Card>
+          <EmptyState
+            icon={Timer}
+            title="No sessions yet"
+            body="The first one lands here with its time and length."
+          />
         ) : (
-          <>
-            <Card padding="none" className="overflow-hidden">
-              <ul className="inset-divider">
-                {visible.map((session) => (
-                  <SessionRow key={session.id} session={session} />
-                ))}
-              </ul>
-            </Card>
-            {sessions.length > HISTORY_PREVIEW && !showAllHistory && (
-              <button
-                type="button"
-                onClick={() => setShowAllHistory(true)}
-                className="self-start text-label text-accent"
-              >
-                Show all {sessions.length}
-              </button>
-            )}
-          </>
+          <ul>
+            {visible.map((session, i) => (
+              <SessionRow
+                key={session.id}
+                session={session}
+                last={i === visible.length - 1}
+              />
+            ))}
+          </ul>
         )}
-      </section>
+      </Card>
+
+      {task.status === 'active' && (
+        <Button variant="secondary" fullWidth onClick={() => setConfirmDelete(true)}>
+          <Trash2 size={16} strokeWidth={1.75} aria-hidden className="text-ember" />
+          <span className="text-ember">Delete task</span>
+        </Button>
+      )}
 
       <TaskFormSheet open={editOpen} onClose={() => setEditOpen(false)} task={task} />
 
@@ -199,12 +281,23 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
   )
 }
 
-function SessionRow({ session }: { session: Session }) {
+function SessionRow({ session, last }: { session: Session; last?: boolean }) {
   const started = new Date(session.startedAt)
 
   return (
-    <li className="flex items-center gap-3 px-4 py-3">
-      <PriorityDot priority={session.completed ? 'low' : 'medium'} />
+    <li
+      className={cn(
+        'flex items-center gap-3 py-2.5',
+        !last && 'border-b border-hairline',
+      )}
+    >
+      <span
+        aria-hidden
+        className={cn(
+          'size-2 shrink-0 rounded-full',
+          session.completed ? 'bg-green' : 'bg-ember',
+        )}
+      />
       <span className="min-w-0 flex-1 text-body-sm text-ink">
         {started.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
         <span className="text-ink-3">

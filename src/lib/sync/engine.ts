@@ -301,6 +301,7 @@ export async function syncNow(): Promise<void> {
 
     const { stalled } = await pushOnce(remoteUserId)
     for (const table of PULL_TABLES) await pullTable(table)
+    await pullProfile(remoteUserId)
 
     useSyncStore.getState().set({
       state: stalled > 0 ? 'stalled' : 'idle',
@@ -313,6 +314,26 @@ export async function syncNow(): Promise<void> {
   } finally {
     running = false
   }
+}
+
+/**
+ * The profile carries one thing the app reads: whether this account is Pro.
+ * It is not a synced table — there is nothing to push and one row to pull — so
+ * it is mirrored straight into meta. A failure here is silent on purpose: an
+ * unreachable profile must never downgrade someone mid-session.
+ */
+async function pullProfile(userId: string): Promise<void> {
+  const supabase = getSupabase()
+  if (!supabase) return
+
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('is_pro')
+    .eq('id', userId)
+    .maybeSingle()
+
+  if (error || !data) return
+  await setMeta(META_KEYS.isPro, data.is_pro === true)
 }
 
 /** Sign-in, reconnect, and every five minutes while the tab is visible. */

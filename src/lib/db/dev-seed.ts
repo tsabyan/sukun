@@ -1,7 +1,16 @@
 import { db, META_KEYS, setMeta } from './schema'
 import { currentUserId } from './identity'
 import { ensureSettings, TASK_TEMPLATES } from './seed'
-import { createTask, createSubtask, createTag, setTaskTags, recordSession } from './repo'
+import {
+  createTask,
+  createSubtask,
+  createTag,
+  setTaskTags,
+  recordSession,
+  createIdentity,
+  createHabit,
+  toggleHabitDay,
+} from './repo'
 import { addDays, fromLocalDate, today, toLocalDate } from '@/lib/utils/dates'
 import type { Priority, TaskColor } from './types'
 
@@ -50,12 +59,35 @@ const SAMPLE_TASKS: Array<{
   { title: 'Backup the laptop', description: 'Full disk image before the OS upgrade', icon: 'hard-drive', color: 'slate', priority: 'low', estimate: 1, subtasks: [], tags: ['admin'] },
 ]
 
+const SAMPLE_IDENTITIES: Array<{ name: string; habits: Array<{ name: string; schedule: number[] }> }> = [
+  {
+    name: 'A focused engineer',
+    habits: [
+      { name: 'Read one spec', schedule: [1, 2, 3, 4, 5] },
+      { name: 'Ship something small', schedule: [1, 2, 3, 4, 5] },
+    ],
+  },
+  {
+    name: 'Someone who moves',
+    habits: [
+      { name: 'Morning walk', schedule: [0, 1, 2, 3, 4, 5, 6] },
+      { name: 'Stretch before bed', schedule: [0, 1, 2, 3, 4, 5, 6] },
+    ],
+  },
+  {
+    name: 'A calm reader',
+    habits: [{ name: 'Ten pages', schedule: [0, 2, 4, 6] }],
+  },
+]
+
 export interface SeedResult {
   tasks: number
   subtasks: number
   tags: number
   sessions: number
   days: number
+  identities: number
+  habits: number
 }
 
 export async function seedDevData(days = 90, seed = 42): Promise<SeedResult> {
@@ -162,6 +194,22 @@ export async function seedDevData(days = 90, seed = 42): Promise<SeedResult> {
     }
   }
 
+  /* — identities, habits and 60 days of habit logs */
+  let habitCount = 0
+  for (const sample of SAMPLE_IDENTITIES) {
+    const identity = await createIdentity(sample.name)
+    for (const h of sample.habits) {
+      const habit = await createHabit(identity.id, h.name, h.schedule)
+      habitCount++
+      for (let offset = 60; offset >= 0; offset--) {
+        const date = addDays(today(), -offset)
+        if (!h.schedule.includes(fromLocalDate(date).getDay())) continue
+        if (random() < 0.28) continue
+        await toggleHabitDay(habit.id, date)
+      }
+    }
+  }
+
   await setMeta(META_KEYS.seededAt, new Date().toISOString())
 
   return {
@@ -170,6 +218,8 @@ export async function seedDevData(days = 90, seed = 42): Promise<SeedResult> {
     tags: tagNames.length,
     sessions: sessionCount,
     days,
+    identities: SAMPLE_IDENTITIES.length,
+    habits: habitCount,
   }
 }
 

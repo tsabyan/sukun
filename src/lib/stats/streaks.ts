@@ -52,7 +52,7 @@ export function computeStreaks(
 }
 
 /**
- * The seven dots on the timer's streak card — docs/05-screens.md S1.
+ * The seven dots behind the week bars — docs/05-screens.md B1.
  * Ends today, so the rightmost dot is always the day the user is looking at.
  */
 export function weekDots(

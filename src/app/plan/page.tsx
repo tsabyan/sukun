@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useDevOpen } from '@/lib/dev/state'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import {
@@ -27,7 +28,7 @@ import { completeTask, listPlanned, reopenTask, setPlacement } from '@/lib/db/re
 import { addDays, fromLocalDate, today } from '@/lib/utils/dates'
 import type { DayBlock, Task } from '@/lib/db/types'
 
-/** How far either way the date arrows will go — docs/05-screens.md S2. */
+/** How far either way the date arrows will go — docs/05-screens.md B8. */
 const DATE_RANGE = 7
 
 /**
@@ -43,6 +44,8 @@ export default function PlanPage() {
   const [addTo, setAddTo] = useState<DayBlock | null>(null)
 
   const planned = useLiveQuery(() => listPlanned(date), [date])
+
+  useDevOpen('plan-add', () => setAddTo('morning'))
 
   const sensors = useSensors(
     // A short delay lets a tap still be a tap; without it every scroll

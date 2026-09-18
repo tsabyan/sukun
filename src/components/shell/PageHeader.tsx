@@ -4,10 +4,11 @@ import { cn } from '@/lib/utils/cn'
 /**
  * The one page header — docs/05-screens.md.
  *
- * Every titled screen renders its title the same way: a display-face h1 on the
- * left, an optional leading control (a back or close button) beside it, and an
- * optional cluster of page actions on the right. Timer and Plan opt out on
- * purpose — one carries the brand wordmark, the other a date navigator.
+ * Every titled screen renders its title the same way: an h1 on the left, an
+ * optional leading control (a back button) beside it, and an optional cluster
+ * of secondary actions on the right — search, share, a gear. The *primary*
+ * action is never here: it lives in the bottom bar, in reach of the thumb.
+ * Focus opts out entirely; it carries the brand lockup instead.
  */
 export function PageHeader({
   title,
@@ -23,12 +24,14 @@ export function PageHeader({
   className?: string
 }) {
   return (
-    <header className={cn('flex items-center justify-between gap-3', className)}>
-      <div className="flex min-w-0 items-center gap-2">
+    <header className={cn('flex min-h-[52px] items-center justify-between gap-3', className)}>
+      <div className="flex min-w-0 items-center gap-1.5">
         {leading}
-        <h1 className="truncate text-title-l font-display text-ink">{title}</h1>
+        <h1 className={cn('truncate text-ink', leading ? 'text-title-s' : 'text-title-l')}>
+          {title}
+        </h1>
       </div>
-      {actions ? <div className="flex shrink-0 items-center gap-1">{actions}</div> : null}
+      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
     </header>
   )
 }
