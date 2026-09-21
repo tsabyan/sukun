@@ -67,10 +67,14 @@ The mark sits to the left of the wordmark at 1.2× the cap height, with a gap of
 
 ### App icon
 
-- Background: `--canvas` dark (`#0F1216`) in both themes. The icon does not follow the system theme; a home screen icon that changes is a home screen icon nobody finds.
-- Mark centered at 44% of the icon width, in brand green `#9CD237` on charcoal `#292A2C`.
-- Maskable variant: same, with the mark at 34% to survive the safe-area crop.
-- Favicon: the mark alone, 2.5px stroke at 32px so it doesn't disappear in a tab strip.
+**The icon is the mascot, not the mark.** A charcoal blob with a green sprout, peering over a green hill on cream — a home screen full of glyphs, and this one is a face. Source art: `public/images/app.jpeg`.
+
+- The icon does not follow the system theme; a home screen icon that changes is a home screen icon nobody finds.
+- Generated from the source square: `src/app/apple-icon.png` 180, `public/icons/192.png`, `public/icons/512.png`.
+- Maskable variant: full bleed at 512. The art already carries its own margin — the sprout tip sits ~13% from the top, inside the 80% safe circle — so insetting it only opens cream gutters where the hill should reach the edge.
+- Favicon (`src/app/icon.png`, 48px): cropped to the head with the hill bled to the edges. At tab-strip size the full icon's cream margin eats the character.
+- There is no `icon.svg`. Next prefers an SVG over the PNG for the tab icon, and the one that shipped was the v1 teal mark — keeping it would have kept the old logo on tabs.
+- The logomark ring still owns the in-app brand: header wordmark, error and phase placeholders, progress rings. Icon and mark are allowed to be different things.
 
 ### Tagline
 
