@@ -1,6 +1,6 @@
 -- 002 — profiles and settings
 
-create table if not exists sukun.profiles (
+create table if not exists profiles (
   id           uuid primary key references auth.users(id) on delete cascade,
   display_name text,
   timezone     text        not null default 'UTC',
@@ -10,7 +10,7 @@ create table if not exists sukun.profiles (
   updated_at   timestamptz not null default now()
 );
 
-create table if not exists sukun.settings (
+create table if not exists settings (
   user_id                   uuid primary key references auth.users(id) on delete cascade,
   focus_minutes             int  not null default 25  check (focus_minutes between 1 and 180),
   short_break_minutes       int  not null default 5   check (short_break_minutes between 1 and 60),
@@ -29,36 +29,37 @@ create table if not exists sukun.settings (
   updated_at                timestamptz not null default now()
 );
 
-drop trigger if exists t_profiles_updated on sukun.profiles;
-create trigger t_profiles_updated before update on sukun.profiles
-  for each row execute function sukun.set_updated_at();
+drop trigger if exists t_profiles_updated on profiles;
+create trigger t_profiles_updated before update on profiles
+  for each row execute function set_updated_at();
 
-drop trigger if exists t_settings_updated on sukun.settings;
-create trigger t_settings_updated before update on sukun.settings
-  for each row execute function sukun.set_updated_at();
+drop trigger if exists t_settings_updated on settings;
+create trigger t_settings_updated before update on settings
+  for each row execute function set_updated_at();
 
--- Every new auth user gets a profile and a settings row — including anonymous
--- ones, which is the whole point: an anonymous user is a real auth.uid() and
--- owns real rows from their first second.
+-- Every new auth user gets a profile and a settings row. Sign-in is always
+-- deliberate here (anonymous sign-ins are disabled — doc 08 §2), so this fires
+-- on the Google or magic-link upgrade, not on first run.
 --
--- search_path is pinned to sukun for the same reason it is always pinned in a
--- security definer function: without it the function resolves names using the
--- caller's search_path, which is a privilege escalation waiting to happen.
-create or replace function sukun.handle_new_user()
+-- search_path is pinned for the same reason it is always pinned in a security
+-- definer function: without it the function resolves names using the caller's
+-- search_path, which is a privilege escalation waiting to happen.
+create or replace function handle_new_user()
 returns trigger
 language plpgsql
-security definer set search_path = sukun, pg_temp
+security definer set search_path = public, pg_temp
 as $$
 begin
-  insert into sukun.profiles (id) values (new.id) on conflict do nothing;
-  insert into sukun.settings (user_id) values (new.id) on conflict do nothing;
+  insert into profiles (id) values (new.id) on conflict do nothing;
+  insert into settings (user_id) values (new.id) on conflict do nothing;
   return new;
 end;
 $$;
 
--- Named for this app: a shared database may carry other on_auth_user_created
--- triggers, and Postgres allows several on the same table.
+-- The old name from the shared-database era is dropped too, so a project that
+-- ever ran the `sukun` migrations does not end up firing both.
 drop trigger if exists on_auth_user_created_sukun on auth.users;
-create trigger on_auth_user_created_sukun
+drop trigger if exists on_auth_user_created_ajeg on auth.users;
+create trigger on_auth_user_created_ajeg
   after insert on auth.users
-  for each row execute function sukun.handle_new_user();
+  for each row execute function handle_new_user();

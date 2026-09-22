@@ -257,7 +257,7 @@ Read the waitlist from the Supabase dashboard, never from the app.
 
 ### `device_days` — counting guests
 
-`auth.users` counts people who signed up. The app is deliberately usable without an account, so most users never appear there. `sukun.device_days` holds one row per device per local day — `device_id` (a random UUID for the install, not a fingerprint), `local_date`, and a nullable `user_id` that fills in once the device has an account.
+`auth.users` counts people who signed up. The app is deliberately usable without an account, so most users never appear there. `device_days` holds one row per device per local day — `device_id` (a random UUID for the install, not a fingerprint), `local_date`, and a nullable `user_id` that fills in once the device has an account.
 
 Insert-only for the same reason as the waitlist, and pushed the same way. Total users, daily actives, guest-vs-registered split, and day-7 retention all fall out of that one table; the queries are in [10-validation.md](10-validation.md) §2, along with two convenience views.
 

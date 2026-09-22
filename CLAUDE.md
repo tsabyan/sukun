@@ -2,7 +2,7 @@
 
 A calm Pomodoro web app. Local-first PWA on Next.js 16 + Supabase, deployed on Vercel.
 
-**Ajeg** — Javanese for *steady, the same every time*. The logo is the mascot on the app icon — there is no separate abstract mark. Brand spec in `docs/04-design-system.md` §0.1. Renamed from Sukun; the `sukun` Postgres schema and the local storage names did not follow it — see rules 9 and 12.
+**Ajeg** — Javanese for *steady, the same every time*. The logo is the mascot on the app icon — there is no separate abstract mark. Brand spec in `docs/04-design-system.md` §0.1. Renamed from Sukun; the local storage names did not follow it — see rule 12. The Postgres schema did, once Ajeg got its own Supabase project — see rule 9.
 
 ## Read before coding
 
@@ -29,10 +29,10 @@ If the code and a doc disagree, the doc wins — or the doc is wrong and you say
 6. **`tabular-nums` on every number that changes over time.**
 7. **Never touch `src/lib/timer/machine.test.ts` to make a test pass.** Those tests encode the invariants. Fix the implementation.
 8. **The `service_role` key never appears in this repo.** RLS is the authorization model.
-9. **All Postgres objects live in the `sukun` schema, never `public`.** The database is shared with other apps. New tables need a matching grant — see `supabase/migrations/*_grants.sql` and `docs/08-deployment.md` §2.
+9. **Every new table enables RLS in the same migration that creates it.** Ajeg has its own Supabase project, so its objects live in `public`, which grants `anon` and `authenticated` broadly by default — a table without RLS is world-readable the moment it exists. (Until 2026-09-22 they lived in a `sukun` schema on a shared database; the migrations were rewritten when the project was split out. `docs/08-deployment.md` §2.)
 10. **Analytics get events, never user content.** No task titles, notes, or tag names leave the device.
 11. **44px minimum touch targets, visible focus rings, `prefers-reduced-motion` respected.** Not a polish phase — write it this way the first time.
-12. **Local storage names are frozen at `sukun`.** The Dexie database (`src/lib/db/schema.ts`) and the `sukun.theme` / `sukun.phase` / `sukun.onboarded` keys keep their pre-rename names. They are the identity of data already on people's devices; renaming them orphans it. They are invisible to users — leave them.
+12. **Local storage names are frozen at `sukun`, and did not move with the database.** The Dexie database (`src/lib/db/schema.ts`) and the `sukun.theme` / `sukun.phase` / `sukun.onboarded` keys keep their pre-rename names. They are the identity of data already on people's devices; renaming them orphans it. They are invisible to users — leave them.
 
 ## Conventions
 

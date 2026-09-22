@@ -8,7 +8,7 @@
 -- inherits RLS from the base tables. Without it a view is owned by the creator
 -- and happily returns everyone's rows.
 
-create or replace view sukun.daily_focus
+create or replace view daily_focus
 with (security_invoker = true) as
 select
   user_id,
@@ -16,19 +16,19 @@ select
   count(*)                          as sessions,
   sum(actual_duration_sec)          as focus_seconds,
   count(*) filter (where completed) as completed_sessions
-from sukun.sessions
+from sessions
 where mode = 'focus' and deleted_at is null
 group by user_id, local_date;
 
-create or replace view sukun.weekly_focus
+create or replace view weekly_focus
 with (security_invoker = true) as
 select
   user_id,
   date_trunc('week', local_date)::date as week_start,
   count(*)                             as sessions,
   sum(actual_duration_sec)             as focus_seconds
-from sukun.sessions
+from sessions
 where mode = 'focus' and deleted_at is null
 group by user_id, date_trunc('week', local_date);
 
-grant select on sukun.daily_focus, sukun.weekly_focus to anon, authenticated;
+grant select on daily_focus, weekly_focus to anon, authenticated;

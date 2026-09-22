@@ -3,16 +3,17 @@ import { createBrowserClient } from '@supabase/ssr'
 /**
  * The browser client — docs/08-deployment.md §2.
  *
- * `db.schema` is not optional here. Every table this app owns lives in the
- * `sukun` schema because the project's database is shared with other
- * applications; without this the client queries `public` and every request
- * 404s with nothing useful in the message.
+ * Ajeg has its own Supabase project now, so its tables live in `public` and
+ * `db.schema` is the default. It is still passed explicitly, and the name is
+ * still a constant: it is the one line that has to change if this app ever
+ * shares a database again, and an app that hardcodes the default has to find
+ * every client instead.
  *
  * The anon key is public by design. It ships in the client bundle and RLS is
  * what protects the data. The service_role key never appears in this repo.
  */
 
-export const DB_SCHEMA = 'sukun'
+export const DB_SCHEMA = 'public'
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL
 const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
