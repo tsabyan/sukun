@@ -7,7 +7,6 @@ import { motion } from 'motion/react'
 import { Plus, X } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 import { spring } from '@/lib/motion/tokens'
-import { useFabStore } from '@/lib/ui/fab'
 import { AddMenu } from './AddMenu'
 import { FULLSCREEN_ROUTES, PRIMARY_NAV, isActive, type NavItem } from './nav'
 
@@ -65,7 +64,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
  * the easiest point on a phone to hit.
  */
 function BottomBar({ pathname }: { pathname: string }) {
-  const hidden = useFabStore((s) => s.hidden)
   const [addOpen, setAddOpen] = useState(false)
   const [left, right] = [PRIMARY_NAV.slice(0, 2), PRIMARY_NAV.slice(2)]
 
@@ -85,10 +83,9 @@ function BottomBar({ pathname }: { pathname: string }) {
           <TabItem key={item.href} item={item} active={isActive(pathname, item.href)} />
         ))}
 
-        {/* The gap the button sits in. It keeps its width on the screens that
-            hide the button, so the tabs never shift between routes. */}
-        <span className="relative w-14 shrink-0" aria-hidden={hidden}>
-          {!hidden && (
+        {/* The gap the button sits in. */}
+        <span className="relative w-14 shrink-0">
+          {
             // The wrapper owns the position, the button owns the press. Motion
             // writes `transform` wholesale, so a translate set on the animated
             // element itself is dropped the moment `whileTap` fires.
@@ -109,8 +106,12 @@ function BottomBar({ pathname }: { pathname: string }) {
                   'rounded-full bg-green text-on-accent',
                   // A 6px charcoal ring, so the half that rides above the
                   // capsule still reads as cut out of the bar rather than
-                  // stuck on top of it.
-                  'shadow-[0_0_0_6px_var(--text-primary),var(--shadow-fab)]',
+                  // stuck on top of it. Exactly the bar's own colour, and
+                  // nothing else: the green glow that used to sit under it
+                  // (--shadow-fab) washed over the ring and the capsule around
+                  // it, which read as a ring in a different charcoal than the
+                  // bar it is cut from — issue #6.
+                  'shadow-[0_0_0_6px_var(--text-primary)]',
                 )}
               >
                 {addOpen ? (
@@ -120,7 +121,7 @@ function BottomBar({ pathname }: { pathname: string }) {
                 )}
               </motion.button>
             </span>
-          )}
+          }
         </span>
 
         {right.map((item) => (

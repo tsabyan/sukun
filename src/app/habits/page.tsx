@@ -65,6 +65,8 @@ function HabitsView() {
   const [newHabitFor, setNewHabitFor] = useState<string | null>(null)
   const [habitSheet, setHabitSheet] = useState(false)
   const [identitySheet, setIdentitySheet] = useState(false)
+  /** set when the identity sheet was opened from inside the habit sheet */
+  const [resumeHabit, setResumeHabit] = useState(false)
 
   // Home's add menu routes here with what it wants opened.
   const [handledParam, setHandledParam] = useState<string | null>(null)
@@ -119,8 +121,18 @@ function HabitsView() {
     <>
       <NewIdentitySheet
         open={identitySheet}
-        onClose={() => setIdentitySheet(false)}
-        onCreate={(name) => void createIdentity(name)}
+        onClose={() => {
+          setIdentitySheet(false)
+          setResumeHabit(false)
+        }}
+        onCreate={(name) =>
+          void createIdentity(name).then((identity) => {
+            if (!resumeHabit) return
+            setNewHabitFor(identity.id)
+            setResumeHabit(false)
+            setHabitSheet(true)
+          })
+        }
       />
       <NewHabitSheet
         open={habitSheet}
@@ -128,6 +140,13 @@ function HabitsView() {
         identities={identities}
         identityId={newHabitFor ?? identities[0]?.id ?? null}
         onPickIdentity={setNewHabitFor}
+        onAddIdentity={() => {
+          // Hand the flow over to the identity sheet and remember to come
+          // back: the habit the user was typing is the reason they are here.
+          setHabitSheet(false)
+          setResumeHabit(true)
+          setIdentitySheet(true)
+        }}
         onCreate={({ identityId, name, schedule }) =>
           void createHabit(identityId, name, schedule)
         }

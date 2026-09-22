@@ -10,7 +10,6 @@ import {
   Flag,
   Pencil,
   Play,
-  Share,
   StickyNote,
   Timer,
   Trash2,
@@ -23,20 +22,19 @@ import { Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { toast } from '@/components/ui/Toast'
 import { PageHeader } from '@/components/shell/PageHeader'
-import { useHideFab } from '@/lib/ui/fab'
 import { TaskIconTile } from '@/components/tasks/TaskIconTile'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
 import { SubtaskList } from '@/components/tasks/SubtaskList'
 import {
   deleteTask,
-  exportAll,
   listSessionsForTask,
   listTags,
   listTaskTagIds,
   live,
   restoreTask,
 } from '@/lib/db/repo'
-import { useTimerStore } from '@/lib/timer/store'
+import { useStartSession } from '@/lib/timer/use-start-session'
+import { SwitchTaskSheet } from '@/components/timer/SwitchTaskSheet'
 import { formatDuration } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
 import type { Session } from '@/lib/db/types'
@@ -55,6 +53,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
     return all.filter((tag) => ids.includes(tag.id))
   }, [id])
 
+  const session = useStartSession()
+
   const [editOpen, setEditOpen] = useState(false)
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [showAllHistory, setShowAllHistory] = useState(false)
@@ -64,14 +64,8 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
 
   const startSession = useCallback(() => {
     if (!task) return
-    useTimerStore.getState().attachTask(task.id, task.title)
-    useTimerStore.getState().start()
-    router.push('/focus')
-  }, [task, router])
-
-  // The bottom bar's button means "add" everywhere; starting a session on
-  // *this* task belongs on the screen, under the progress it moves.
-  useHideFab()
+    session.request(task.id, task.title)
+  }, [task, session])
 
   if (task === undefined) return <div className="h-40 animate-pulse rounded-lg bg-hairline" />
 
@@ -84,17 +78,6 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
         </Link>
       </div>
     )
-  }
-
-  const copyAsJson = async () => {
-    const bundle = await exportAll()
-    const payload = {
-      task,
-      subtasks: bundle.subtasks.filter((s) => s.taskId === task.id),
-      sessions: bundle.sessions.filter((s) => s.taskId === task.id),
-    }
-    await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
-    toast('Task copied as JSON')
   }
 
   const remove = async () => {
@@ -131,14 +114,9 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
           </Link>
         }
         actions={
-          <>
-            <IconButton label="Copy as JSON" onClick={() => void copyAsJson()}>
-              <Share size={18} strokeWidth={1.75} />
-            </IconButton>
-            <IconButton label="Edit task" onClick={() => setEditOpen(true)}>
-              <Pencil size={18} strokeWidth={1.75} />
-            </IconButton>
-          </>
+          <IconButton label="Edit task" onClick={() => setEditOpen(true)}>
+            <Pencil size={18} strokeWidth={1.75} />
+          </IconButton>
         }
       />
 
@@ -266,6 +244,14 @@ export default function TaskDetailPage({ params }: { params: Promise<{ id: strin
       )}
 
       <TaskFormSheet open={editOpen} onClose={() => setEditOpen(false)} task={task} />
+
+      <SwitchTaskSheet
+        open={session.pending !== null}
+        runningTitle={session.runningTitle}
+        nextTitle={session.pending?.title ?? null}
+        onConfirm={session.confirm}
+        onClose={session.cancel}
+      />
 
       <ConfirmSheet
         open={confirmDelete}

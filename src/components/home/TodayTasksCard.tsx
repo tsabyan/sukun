@@ -1,7 +1,6 @@
 'use client'
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { motion } from 'motion/react'
 import { CalendarDays, Check, ListTodo, Pause, Play, Plus } from 'lucide-react'
 import { Card, CardHead } from '@/components/ui/Card'
@@ -12,6 +11,8 @@ import type { IconTileTone } from '@/components/ui/IconTile'
 import { reopenTask } from '@/lib/db/repo'
 import { taskIcon } from '@/lib/tasks/icons'
 import { useTimerStore } from '@/lib/timer/store'
+import { useStartSession } from '@/lib/timer/use-start-session'
+import { SwitchTaskSheet } from '@/components/timer/SwitchTaskSheet'
 import { spring } from '@/lib/motion/tokens'
 import { formatCountdown, today } from '@/lib/utils/dates'
 import { cn } from '@/lib/utils/cn'
@@ -79,7 +80,7 @@ export function TodayTasksCard({
 }
 
 function TaskRow({ task }: { task: Task }) {
-  const router = useRouter()
+  const session = useStartSession()
   const attachedId = useTimerStore((s) => s.runtime.taskId)
   const status = useTimerStore((s) => s.runtime.status)
   const phase = useTimerStore((s) => s.runtime.phase)
@@ -91,14 +92,11 @@ function TaskRow({ task }: { task: Task }) {
   const tone: IconTileTone = complete ? 'green' : 'field'
 
   const start = () => {
-    const timer = useTimerStore.getState()
     if (focusing) {
-      timer.toggle()
+      useTimerStore.getState().toggle()
       return
     }
-    timer.attachTask(task.id, task.title)
-    if (timer.runtime.status !== 'running') timer.start()
-    router.push('/focus')
+    session.request(task.id, task.title)
   }
 
   return (
@@ -155,6 +153,13 @@ function TaskRow({ task }: { task: Task }) {
           )}
         </motion.button>
       )}
+      <SwitchTaskSheet
+        open={session.pending !== null}
+        runningTitle={session.runningTitle}
+        nextTitle={session.pending?.title ?? null}
+        onConfirm={session.confirm}
+        onClose={session.cancel}
+      />
     </li>
   )
 }

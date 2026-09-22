@@ -11,7 +11,6 @@ import { Pill } from '@/components/ui/Pill'
 import { getAchievements } from '@/lib/db/repo'
 import { ACHIEVEMENTS, ACHIEVEMENT_COUNT, type AchievementGroup } from '@/lib/db/seed'
 import { taskIcon } from '@/lib/tasks/icons'
-import { useHideFab } from '@/lib/ui/fab'
 import { cn } from '@/lib/utils/cn'
 
 /** The catalogue's own grouping, in the order it should be worked through. */
@@ -37,7 +36,6 @@ export default function AchievementsPage() {
     [],
   )
 
-  useHideFab()
 
   const earned = unlocked?.size ?? 0
   const next = ACHIEVEMENTS.find((badge) => !unlocked?.has(badge.key))

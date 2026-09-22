@@ -12,7 +12,6 @@ import { StatRow, StatTile } from '@/components/ui/StatTile'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { HabitRow } from './HabitRow'
 import { useDevOpen } from '@/lib/dev/state'
-import { useHideFab } from '@/lib/ui/fab'
 import { addDays, fromLocalDate, today as todayLocal } from '@/lib/utils/dates'
 import {
   currentStreak,
@@ -56,7 +55,6 @@ export function IdentityDetail({
 
   useDevOpen('identity-delete', () => setConfirmOpen(true))
   // Its own "+" sits beside the count it adds to.
-  useHideFab()
 
   const today = todayLocal()
   const doneOf = (habitId: string) => logs[habitId] ?? new Set<LocalDate>()

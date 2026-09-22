@@ -200,7 +200,7 @@ owned a settings row and a route, and nobody needs two clocks.
 
 ```
 ┌──────────────────────────────────┐
-│  (⌄)     [ Session 3 of 4 ]  (🔊)│
+│  (⌄)     [ Session 1 of 3 ]  (🔊)│
 │                                  │
 │              FOCUS               │
 │             24:13                │  display-xl, tabular
@@ -213,6 +213,16 @@ owned a settings row and a route, and nobody needs two clocks.
 └──────────────────────────────────┘
 ```
 
+- **The pill counts the task, not the cycle.** With a task attached it reads
+  `Session {task.completedPomodoros + 1} of {task.estimatedPomodoros}`; with no
+  task it falls back to the long-break cycle (`of sessionsUntilLongBreak`). It
+  used to always read the cycle — "Session 1 of 4" on a task estimated at one
+  session, which is a claim about the task and was wrong for every task not
+  estimated at four. The dots below still show the cycle: that is the machine's
+  business. Issue #6.
+- **The progress line has no CSS width transition.** It is re-rendered every
+  second anyway, and a transition does not advance while the tab is hidden —
+  which is exactly what this app tells you to do. Issue #6.
 - **Minimise** (⌄) returns to Home with the clock still running. This screen is
   a *view* of the machine, never the machine itself.
 - **Reset** asks for confirmation (B9) only when more than 60 seconds have
@@ -233,9 +243,9 @@ owned a settings row and a route, and nobody needs two clocks.
 
 ```
 ┌──────────────────────────────────┐
-│  Tasks                    ＋  ⚙︎  │
+│  Tasks                        ⚙︎  │
 │  ┌──────────┬──────────┐         │
-│  │ Active 8 │Completed │  ↕ Recent│
+│  │ Active 8 │Completed │         │
 │  └──────────┴──────────┘         │
 │  ⟨ bug · code-review · docs ⟩    │  horizontal tag chips
 │                                  │
@@ -253,7 +263,12 @@ owned a settings row and a route, and nobody needs two clocks.
 **Elements**
 
 1. **Header** — title, add button (opens create sheet), settings.
-2. **Segmented control** — Active / Completed, with counts. Sort menu on the right: Recent, Priority, Due date, A–Z.
+2. **Segmented control** — Active / Completed, with counts. **No sort control.**
+   The four orders (Recent · Priority · Due date · A–Z) shipped as chips behind
+   a header button and never ordered the list the way the labels promised, so
+   the button was a lie you had to tap twice to find. Removed with the chips
+   and the `sort` argument at the call site — issue #6. The list is the repo's
+   default order; bring sorting back only with the repo query to make it true.
 3. **Tag chips** — horizontal scroll, multi-select filter. Selected chips fill with `--accent-muted`.
 4. **Free-tier meter** — visible only when `active tasks ≥ 7`. Shows "N of 10 tasks" with a progress bar and a Pro badge. At 10, the add button opens the upsell sheet instead of the create sheet.
 5. **Task card** — 4px colored left rail (task color), squircle icon tile, title, subtask progress bar with `done/total`, estimate chip, recurring badge, and a right-side complete button. Swipe left: Complete · Delete.
@@ -459,6 +474,10 @@ rather than a settings corner.
 - **D6 · New habit** — sheet. Identity chips, name, then the schedule: seven
   day toggles pre-set to weekdays, with Every day / Weekdays / Weekends
   presets. A habit can never end up scheduled on no days.
+  With **no identities yet**, the chips are replaced by one button — "Add an
+  identity first" — which hands over to D5 and comes back: creating the
+  identity reopens this sheet with it already selected. It used to be a red
+  pill stating a requirement you could not act on. Issue #6.
 - **D7 · Delete identity** — confirm sheet; the identity and all its habits go.
 
 Streak maths lives in `lib/habits/streaks.ts`. Today not yet done never breaks

@@ -292,7 +292,7 @@ border *and* a shadow — on a grey canvas that reads as two edges.
 --shadow-sm:  0 1px 2px  rgb(41 42 44 / 0.04);
 --shadow-md:  0 2px 12px rgb(41 42 44 / 0.05);   /* every card */
 --shadow-lg:  0 8px 28px rgb(41 42 44 / 0.12);   /* sheets, the tab capsule */
---shadow-fab: 0 8px 24px rgb(156 210 55 / 0.35); /* the one green action */
+--shadow-fab: 0 8px 24px rgb(156 210 55 / 0.35); /* unused since issue #6 */
 ```
 
 The floating action is the only element with a *coloured* shadow. It is the
@@ -390,12 +390,21 @@ between tabs with Motion's `layoutId`. Inactive: the icon at 70% white.
 
 ### The floating action
 
-A 56px `--green` circle in that gap, raised 15px out of the capsule, with
-`--shadow-fab`. Icon only, 26px, charcoal; the label is its `aria-label`.
+A 56px `--green` circle in that gap, raised 15px out of the capsule, ringed by
+6px of `--text-primary` — the capsule's own fill, so the button reads as cut
+out of the bar rather than stuck on top of it. Icon only, 26px, charcoal; the
+label is its `aria-label`.
 
-It belongs to the **screen**, not the shell: pages register one through
-`usePageAction` and the shell renders whatever is there. The gap keeps its
-width when no action is registered, so the tabs never shift between routes.
+**No glow.** `--shadow-fab` (a green 24px bloom) used to sit under the ring and
+washed green over both the ring and the capsule around it, which read as a ring
+in a slightly different charcoal than the bar it is cut from — issue #6. The
+ring's colour and the bar's have to be the same token and nothing may tint
+either. The token is still defined but no longer used.
+
+It belongs to the **shell**, not the screen, and it is on every screen that has
+the bar: it always means "open the Add menu". Detail screens used to hide it
+(`useHideFab`), which made the bar change shape as you moved through the app —
+gone, with the hook.
 
 ### Button
 
