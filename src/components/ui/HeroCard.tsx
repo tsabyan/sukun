@@ -33,7 +33,7 @@ export function HeroCard({
   return (
     <section
       className={cn(
-        'flex flex-col gap-4 rounded-xl bg-green p-4 text-ink',
+        'flex flex-col gap-4 rounded-xl bg-green p-4 text-on-accent',
         className,
       )}
     >

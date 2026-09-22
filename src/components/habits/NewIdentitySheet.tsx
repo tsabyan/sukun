@@ -45,7 +45,7 @@ export function NewIdentitySheet({
     <Sheet
       open={open}
       onClose={onClose}
-      snapPoints={[0.62]}
+      snapPoints={[0.9]}
       title="New identity"
       action={
         <Button variant="primary" onClick={create} disabled={!name.trim()}>

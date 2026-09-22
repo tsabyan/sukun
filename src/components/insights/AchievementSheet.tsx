@@ -29,7 +29,7 @@ export function AchievementSheet({
   const held = unlockedAt !== undefined
 
   return (
-    <Sheet open={badge !== null} onClose={onClose} snapPoints={[0.42]} title={badge?.name ?? ''}>
+    <Sheet open={badge !== null} onClose={onClose} snapPoints={[0.9]} title={badge?.name ?? ''}>
       {badge && (
         <div className="flex flex-col gap-5">
           <div className="flex items-center gap-3.5">
@@ -37,7 +37,7 @@ export function AchievementSheet({
               aria-hidden
               className={cn(
                 'inline-flex size-14 shrink-0 items-center justify-center rounded-full',
-                held ? 'bg-green text-ink' : 'bg-field text-ink-3',
+                held ? 'bg-green text-on-accent' : 'bg-field text-ink-3',
               )}
             >
               {createElement(held ? taskIcon(badge.icon) : Lock, {

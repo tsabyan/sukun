@@ -110,7 +110,7 @@ export default function AchievementsPage() {
                       aria-hidden
                       className={cn(
                         'inline-flex size-10 items-center justify-center rounded-full',
-                        held ? 'bg-green text-ink' : 'bg-surface text-ink-3',
+                        held ? 'bg-green text-on-accent' : 'bg-surface text-ink-3',
                       )}
                     >
                       {held

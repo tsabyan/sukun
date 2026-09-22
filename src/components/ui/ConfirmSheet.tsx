@@ -29,7 +29,7 @@ export function ConfirmSheet({
   onClose,
 }: ConfirmSheetProps) {
   return (
-    <Sheet open={open} onClose={onClose} snapPoints={[0.34]} title={title}>
+    <Sheet open={open} onClose={onClose} snapPoints={[0.9]} title={title}>
       <p className="text-body text-ink-2">{body}</p>
       <div className="mt-6 flex flex-col gap-2">
         <Button

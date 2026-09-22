@@ -518,11 +518,41 @@ Grouped inset list, iOS style.
 | **Timer** | Focus length · Short break · Long break · Sessions until long break · Auto-start breaks · Auto-start focus |
 | **Sound & alerts** | Alert sound (5 options, tap to preview) · Volume · Notifications (requests permission) · Haptics |
 | **Appearance** | Theme (System / Light / Dark) · Week starts on |
-| **Account** | Signed out → "Sync across devices" with an email field, and a footnote making clear the app already works without one. Signed in → email, Sync now, Sign out ("Everything stays on this device"). No anonymous accounts. |
+| **Account** | Not a group. A charcoal card above Timer — see below. |
 | **Data** | Export JSON · Import JSON · Delete all data (type DELETE to confirm) |
-| **About** | Version · What's new · Send feedback (mailto) · Privacy |
+| **About** | Version. No feedback mailto — there is no address to send it to yet. |
 
-Duration rows open a wheel-style picker sheet, not a number input. Every change saves immediately — no Save button anywhere in settings.
+### The account card
+
+The account sits above **Timer** as a charcoal card rather than a fifth inset
+group (issue #8). It is the one thing on this screen that is about a person
+rather than a preference, and "Signed in / Sync now / Sign out" as three list
+rows between Appearance and Data made the state you are actually in hard to
+read at a glance.
+
+- **Signed in** — a green avatar disc with initials, the display name
+  (`full_name` from the provider, else the address's local part), the address,
+  and a status pill whose dot carries the sync state: Synced · Syncing… ·
+  Waiting · Offline. Tapping it opens a sheet with **Sync now** and
+  **Sign out**, under the footnote "Everything stays on this device."
+- **Signed out** — the same card shape, a cloud-off glyph, "Sync across
+  devices / Everything is on this device only", and a chevron. Tapping it opens
+  the sign-in sheet.
+- **Unconfigured** (no Supabase on this build) — the same card, not a button,
+  reading "On this device only".
+
+### F2 — Sign in · sheet over `/settings`
+
+"Sync across devices", one line on what an account buys, **Continue with
+Google**, an `or` rule, an email field, **Send me a sign-in link**, and the
+footnote "No password. The link works once, and only on the device you open it
+on." Sending swaps the body for a confirmation naming the address. Anonymous
+stays the normal state; this is the opt-in, and nothing about it nags.
+
+Duration rows open a wheel-style picker sheet, not a number input — five rows
+of 48px, the selected one in a charcoal capsule with the number in `--green`,
+and a **Done** button in the sheet header. Every change saves immediately — no
+Save button anywhere in settings.
 
 ---
 

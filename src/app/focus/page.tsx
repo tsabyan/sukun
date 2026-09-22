@@ -117,7 +117,7 @@ export default function FocusScreen() {
     <div
       className={cn(
         'relative flex min-h-dvh flex-col',
-        onBreak ? 'bg-ink text-surface' : 'bg-green text-ink',
+        onBreak ? 'bg-ink text-surface' : 'bg-green text-on-accent',
       )}
     >
       {/* — top bar */}
@@ -165,7 +165,7 @@ export default function FocusScreen() {
           </span>
         ) : null}
 
-        <p className={cn('eyebrow', onBreak ? 'text-surface/60' : 'text-ink/60')}>
+        <p className={cn('eyebrow', onBreak ? 'text-surface/60' : 'text-on-accent/60')}>
           {justFinished ? 'SESSION DONE' : EYEBROW[phase]}
         </p>
 
@@ -201,7 +201,7 @@ export default function FocusScreen() {
                 back could leave the fill parked at the value it had when you
                 left. Issue #6. */}
             <div
-              className={cn('h-full rounded-full', onBreak ? 'bg-green' : 'bg-ink')}
+              className={cn('h-full rounded-full', onBreak ? 'bg-green' : 'bg-on-accent')}
               style={{ width: `${Math.round(progress * 100)}%` }}
             />
           </div>
@@ -245,10 +245,10 @@ export default function FocusScreen() {
                   done || current
                     ? onBreak
                       ? 'bg-surface'
-                      : 'bg-ink'
+                      : 'bg-on-accent'
                     : onBreak
                       ? 'border-[1.5px] border-surface/50'
-                      : 'border-[1.5px] border-ink/40',
+                      : 'border-[1.5px] border-on-accent/40',
                 )}
               />
             )
@@ -317,7 +317,7 @@ export default function FocusScreen() {
       <p
         className={cn(
           'pb-4 text-center text-body-sm',
-          onBreak ? 'text-surface/60' : 'text-ink/60',
+          onBreak ? 'text-surface/60' : 'text-on-accent/60',
         )}
       >
         {justFinished

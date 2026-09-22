@@ -2,9 +2,10 @@
 
 import { useEffect, useRef } from 'react'
 import { Sheet } from './Sheet'
+import { Button } from './Button'
 import { cn } from '@/lib/utils/cn'
 
-const ROW = 44
+const ROW = 48
 const VISIBLE = 5
 const HEIGHT = ROW * VISIBLE
 
@@ -62,12 +63,24 @@ export function WheelPickerSheet({
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title={title} snapPoints={[0.45]}>
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={title}
+      snapPoints={[0.9]}
+      action={
+        <Button variant="primary" size="sm" onClick={onClose}>
+          Done
+        </Button>
+      }
+    >
       <div className="relative" style={{ height: HEIGHT }}>
-        {/* the selected row sits in this band */}
+        {/* The selected row sits in this band. Charcoal rather than a sunken
+            well — the value is the one thing on this sheet, and a grey band on
+            a white sheet did not read as a selection at all. Issue #8. */}
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-1/2 z-0 -translate-y-1/2 rounded-md bg-surface-sunken"
+          className="pointer-events-none absolute inset-x-0 top-1/2 z-0 -translate-y-1/2 rounded-full bg-on-accent"
           style={{ height: ROW }}
         />
 
@@ -88,13 +101,25 @@ export function WheelPickerSheet({
               aria-selected={option === value}
               onClick={() => onChange(option)}
               className={cn(
-                'flex w-full snap-center items-center justify-center text-title-m tabular-nums transition-colors',
-                option === value ? 'text-ink' : 'text-ink-3',
+                'flex w-full snap-center items-center justify-center gap-1.5 transition-colors',
+                'numerals',
+                option === value
+                  ? 'text-title-l font-normal text-green'
+                  : 'text-title-m text-ink-3',
               )}
               style={{ height: ROW }}
             >
               {option}
-              {suffix && <span className="ml-1.5 text-body-sm text-ink-3">{suffix}</span>}
+              {suffix && (
+                <span
+                  className={cn(
+                    'text-body-sm',
+                    option === value ? 'text-green/70' : 'text-ink-3',
+                  )}
+                >
+                  {suffix}
+                </span>
+              )}
             </button>
           ))}
         </div>

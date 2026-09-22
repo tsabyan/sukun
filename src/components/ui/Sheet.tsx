@@ -12,7 +12,14 @@ interface SheetProps {
   open: boolean
   onClose: () => void
   title?: string
-  /** fractions of viewport height, ascending — docs/05-screens.md C5 */
+  /**
+   * Fractions of viewport height, ascending — docs/05-screens.md C5.
+   *
+   * One point is a *ceiling*: the panel takes the height of its content and
+   * only grows to that fraction when the content needs it. Two points are
+   * fixed heights the user drags between, for sheets that are a scrolling
+   * list and would otherwise resize as the list filters.
+   */
   snapPoints?: [number, number] | [number]
   children: React.ReactNode
   /** rendered in the header's right slot */
@@ -79,10 +86,17 @@ export function Sheet({
     restoreFocusTo.current?.focus()
   }, [open])
 
+  // A sheet with one snap point is sized by its content, capped at that
+  // fraction. A fixed height left short sheets — the confirmations, the
+  // picker, the upsell — with a band of empty surface above the home
+  // indicator, which read as a rendering fault rather than as breathing room.
+  // Issue #8.
+  const fitsContent = snapPoints.length === 1
   const phoneHeight = devPhoneHeight()
-  const height = phoneHeight
-    ? `${Math.round(snapPoints[snapIndex] * phoneHeight)}px`
-    : `${snapPoints[snapIndex] * 100}dvh`
+  const extent = (fraction: number) =>
+    phoneHeight ? `${Math.round(fraction * phoneHeight)}px` : `${fraction * 100}dvh`
+  const height = extent(snapPoints[snapIndex])
+  const maxHeight = extent(snapPoints[snapPoints.length - 1])
 
   const handleDragEnd = useCallback(
     (_: unknown, info: PanInfo) => {
@@ -137,7 +151,7 @@ export function Sheet({
             aria-label={title}
             tabIndex={-1}
             initial={{ y: '100%' }}
-            animate={{ y: 0, height }}
+            animate={fitsContent ? { y: 0 } : { y: 0, height }}
             exit={{ y: '100%' }}
             transition={{ duration: dur.slow, ease: ease.ios }}
             drag="y"
@@ -151,6 +165,7 @@ export function Sheet({
             )}
             style={{
               maxWidth: PHONE_MAX_WIDTH,
+              maxHeight,
               paddingBottom: 'env(safe-area-inset-bottom)',
             }}
           >

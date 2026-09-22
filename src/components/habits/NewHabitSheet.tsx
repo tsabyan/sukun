@@ -78,7 +78,7 @@ export function NewHabitSheet({
     <Sheet
       open={open}
       onClose={onClose}
-      snapPoints={[0.72]}
+      snapPoints={[0.9]}
       title="New habit"
       action={
         <Button variant="primary" onClick={create} disabled={!name.trim() || !identityId}>

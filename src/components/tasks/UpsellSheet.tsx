@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useDevOpen } from '@/lib/dev/state'
-import { Check } from 'lucide-react'
+import { Check, Lock, Mail } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
 import { Field } from '@/components/ui/Field'
@@ -16,16 +16,12 @@ import { FREE_TASK_LIMIT, joinWaitlist } from '@/lib/db/repo'
  * email. A fake checkout would measure nothing and burn the trust of the few
  * people who bothered.
  *
- * The feature list is honest about what Pro would actually be, because a
- * signal collected against a lie is not a signal.
+ * The sheet leads with the count rather than with a feature list — issue #8.
+ * A ticked list of things you cannot buy yet reads as a pricing page for a
+ * product that does not exist; "10 / 10 active tasks" is the fact that
+ * actually stopped you, and the way out of it ("complete a task instead") is
+ * a button rather than a sentence.
  */
-
-const PRO_FEATURES = [
-  'Unlimited tasks',
-  'Sync across your devices',
-  'Custom themes',
-  'Export your data',
-]
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
@@ -70,13 +66,13 @@ export function UpsellSheet({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   return (
-    <Sheet open={open} onClose={close} snapPoints={[0.62]} title="You've hit the free limit">
+    <Sheet open={open} onClose={close} snapPoints={[0.9]} title="You've hit the free limit">
       {submitted ? (
         <div className="flex flex-col items-start gap-4 py-4">
           <span className="accent-muted inline-flex size-11 items-center justify-center rounded-full">
             <Check size={22} strokeWidth={2} className="text-accent" />
           </span>
-          <p className="text-body text-ink">We&apos;ll email you when Pro is ready.</p>
+          <p className="text-body text-ink">We&apos;ll email you when Ajeg Plus is ready.</p>
           <p className="text-body-sm text-ink-2">
             Nothing else — no newsletter, no launch countdown.
           </p>
@@ -86,21 +82,31 @@ export function UpsellSheet({ open, onClose }: { open: boolean; onClose: () => v
         </div>
       ) : (
         <div className="flex flex-col gap-5">
-          <p className="text-body text-ink-2">
-            {`The free tier holds ${FREE_TASK_LIMIT} active tasks. Complete or delete one to add another, or leave your email and we'll tell you when Pro lands.`}
-          </p>
+          {/* the count that stopped you, stated as the hero of the sheet */}
+          <section className="flex items-center justify-between gap-3 rounded-lg bg-green p-4 text-on-accent">
+            <div className="min-w-0">
+              <p className="numerals text-display-s">
+                {FREE_TASK_LIMIT} / {FREE_TASK_LIMIT}
+              </p>
+              <p className="text-body-sm">active tasks on the free plan</p>
+            </div>
+            <span
+              aria-hidden
+              className="inline-flex size-12 shrink-0 items-center justify-center rounded-md bg-on-accent"
+            >
+              <Lock size={20} strokeWidth={1.75} className="text-lime" />
+            </span>
+          </section>
 
-          <ul className="flex flex-col gap-2">
-            {PRO_FEATURES.map((feature) => (
-              <li key={feature} className="flex items-center gap-2.5 text-body text-ink">
-                <Check size={16} strokeWidth={2} className="shrink-0 text-accent" aria-hidden />
-                {feature}
-              </li>
-            ))}
-          </ul>
+          <p className="text-body text-ink-2">
+            Ajeg Plus lifts the cap and syncs everything across devices. It isn&apos;t ready
+            yet — leave an email and we&apos;ll tell you the moment it is.
+          </p>
 
           <Field
             label="Email"
+            labelHidden
+            icon={Mail}
             type="email"
             inputMode="email"
             autoComplete="email"
@@ -116,9 +122,14 @@ export function UpsellSheet({ open, onClose }: { open: boolean; onClose: () => v
             }}
           />
 
-          <Button variant="primary" fullWidth disabled={saving} onClick={() => void submit()}>
-            Notify me at launch
-          </Button>
+          <div className="flex flex-col gap-2.5">
+            <Button variant="primary" fullWidth disabled={saving} onClick={() => void submit()}>
+              Join the waitlist
+            </Button>
+            <Button variant="secondary" fullWidth onClick={close}>
+              Complete a task instead
+            </Button>
+          </div>
         </div>
       )}
     </Sheet>

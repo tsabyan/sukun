@@ -105,7 +105,7 @@ export function ActionSheet({
                           TONES[option.tone ?? 'green'],
                         )}
                       >
-                        <option.icon size={20} strokeWidth={1.75} className="text-ink" />
+                        <option.icon size={20} strokeWidth={1.75} className="text-on-accent" />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-title-s text-surface">{option.title}</span>

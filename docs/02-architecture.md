@@ -182,7 +182,35 @@ type OutboxEntry = {
 
 ### Push
 
-Drain the outbox oldest-first, batched by table, using Supabase `upsert`. On success delete the entry. On failure increment `attempts` and back off exponentially (1s, 2s, 4s… capped at 5 min). After 10 attempts, park the entry and surface a single non-blocking "sync issue" indicator — never a blocking error dialog.
+Drain the outbox oldest-first, batched by table, using Supabase `upsert`. On success delete the entry. On failure increment `attempts` and back off exponentially (1s, 2s, 4s… capped at 5 min). After 10 attempts, surface a single non-blocking "sync issue" indicator — never a blocking error dialog.
+
+**Ten attempts is a reporting threshold, not a give-up.** The entry keeps
+retrying at the five-minute cap for as long as it exists; only a success
+removes it from the queue. Parking it was the original design and it was
+wrong: `isReady` stopped offering the entry while the cycle went on counting it
+as stalled, so one bad row — typically poisoned during development, against a
+schema or a session that has since been fixed — pinned the status to "Waiting"
+permanently, and clearing IndexedDB was the only way out (issue #8). A
+user-initiated **Sync now** additionally resets `attempts` to zero, so pressing
+the button is always a clean attempt rather than a wait for a timer. The
+stalled count is taken *after* the push, from what is left in the queue.
+
+### When a cycle runs
+
+On sign-in, on reconnect, when the tab becomes visible, and every 5 minutes
+while it stays visible. **A write does not trigger one.**
+
+Pushing shortly after each write was tried and deliberately dropped: it turned
+a single task into its own round trip and multiplied requests against a shared
+database for nothing the user can see. The outbox exists so writes can wait,
+and nothing is at risk while they do — the row is durable in IndexedDB the
+moment it is written, and leaving the tab and coming back flushes the queue
+well before the interval would. The visible cost is that a row added and then
+left alone can take up to five minutes to appear in Postgres. That is the
+trade, made on purpose.
+
+A request arriving while a cycle is in flight is remembered, not dropped, and
+runs once the cycle ends. Overlapping cycles would push the same rows twice.
 
 ### Pull
 
@@ -195,6 +223,24 @@ select * from tasks where updated_at > :lastPulledAt
 Store `lastPulledAt` per table in a Dexie `meta` table.
 
 ### Conflict resolution
+
+**Two tables have no `updated_at` and are pulled whole: `task_tags` and
+`achievements`.** A join row is only ever created or removed, and a badge is
+unlocked once and never touched again, so neither carries the column — and
+asking either for `updated_at > cursor` is a `42703` that throws the entire
+cycle, not just that table (issue #8). They are tiny; the whole pull costs
+nothing. The list is `FULL_PULL_TABLES` in `lib/sync/mappers.ts`, and a test
+pins it.
+
+**Push runs parents-first, in `PUSH_ORDER`, not in the order the outbox
+batched.** Foreign keys point up that chain, and a session pushed ahead of its
+task is a `23503` that never recovers by itself: the session keeps failing
+while the task keeps succeeding.
+
+**One row per id per batch.** Three edits to the same task leave three outbox
+entries, and Postgres rejects an `ON CONFLICT DO UPDATE` whose input names the
+same key twice (`21000`). The newest payload is sent; every superseded entry is
+still deleted on success.
 
 Last-write-wins on `updated_at`, per row. If the remote row is newer than the local row *and* the local row has no pending outbox entry, overwrite locally. If a pending outbox entry exists, local wins — the user's most recent intent on the device they're holding.
 
