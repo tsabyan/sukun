@@ -253,9 +253,9 @@ function InstallPreview() {
         draggable={false}
         // The icon's own hill is this card's green, so without an edge the
         // tile dissolves into the background and the mascot reads as floating.
-        className="size-21 select-none rounded-[26px] ring-2 ring-ink/20 shadow-sm"
+        className="size-21 select-none rounded-[26px] ring-2 ring-on-accent/20 shadow-sm"
       />
-      <span className="text-label text-ink">Ajeg</span>
+      <span className="text-label text-on-accent">Ajeg</span>
       <Pill tone="dark">Add to Home Screen</Pill>
     </div>
   )

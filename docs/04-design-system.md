@@ -176,6 +176,16 @@ over 480ms instead of snapping.
 brand greens are light: charcoal measures **7.6:1** on `--green` and
 **12.4:1** on `--lime`. Near-white on either fails at any size.
 
+**Anything sitting on a green fill uses `--on-accent`, never
+`--text-primary`.** `--text-primary` flips to near-white in dark mode, and the
+greens do not, so `bg-green text-ink` measured 1.7:1 on a dark canvas — the
+hero cards, the focus screen, the unlocked badges and the session banner's
+tile all went unreadable the moment the theme switched (issue #8). The same
+goes the other way: a charcoal element *on* green — the picker's selected
+capsule, the upsell's lock tile — is `bg-on-accent`, not `bg-ink`, or it
+inverts to a white slab in dark mode. The rule is mechanical: if the thing
+underneath is a brand green, the thing on top is fixed too.
+
 ### Priority dots
 
 Small dots and left rails only. Never a filled row, never a background.
@@ -380,6 +390,20 @@ White, radius `--r-lg`, `--shadow-md`, 128px tall, two per row. The number at
 `display-s`/300 top-left, an `ArrowUpRight` top-right **only when the tile goes
 somewhere**, and the label at the bottom in `body-sm`. The label is a phrase,
 not a heading: "day streak · best is 14".
+
+### Sheet
+
+Bottom sheet, `--r-xl` on the top corners, a grabber, and an optional header
+with a title and one action.
+
+**Snap points are fractions of the viewport height, and one point is a
+*ceiling*, not a height.** The panel takes the height of its content and grows
+to that fraction only when the content needs it. Two points are fixed heights
+the user drags between, and they are for sheets that are a scrolling list —
+the task form, Attach a task, a day's sessions — which would otherwise resize
+as the list filters. Everything else takes one point and fits its content: a
+confirmation pinned to 34% of the screen left a band of empty surface above the
+home indicator that read as a rendering fault (issue #8).
 
 ### Bottom bar
 

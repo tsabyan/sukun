@@ -65,7 +65,7 @@ export function SessionBanner() {
           className="flex min-w-0 flex-1 items-center gap-3"
           aria-label={`Open the focus screen · ${formatCountdown(seconds * 1000)} left`}
         >
-          <IconTile icon={Timer} tone="green" size={40} className="bg-green [&>svg]:text-ink" />
+          <IconTile icon={Timer} tone="green" size={40} className="bg-green [&>svg]:text-on-accent" />
           <span className="min-w-0 flex-1">
             <span className="block truncate text-body font-medium">{title}</span>
             <span className="block truncate text-body-sm text-surface/60">

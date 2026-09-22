@@ -7,7 +7,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft } from 'lucide-react'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { SettingsGroup, SettingsRow, SettingsButtonRow } from '@/components/settings/SettingsList'
-import { AccountGroup } from '@/components/settings/AccountGroup'
+import { AccountCard } from '@/components/settings/AccountCard'
 import { WheelPickerSheet } from '@/components/ui/WheelPicker'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -96,6 +96,8 @@ export default function SettingsPage() {
           </IconButton>
         }
       />
+
+      <AccountCard />
 
       <SettingsGroup title="Timer">
         <SettingsButtonRow
@@ -232,8 +234,6 @@ export default function SettingsPage() {
         </SettingsRow>
       </SettingsGroup>
 
-      <AccountGroup />
-
       <SettingsGroup title="Data">
         <SettingsButtonRow
           label="Export"
@@ -254,12 +254,6 @@ export default function SettingsPage() {
 
       <SettingsGroup title="About">
         <SettingsRow label="Version" description={`Ajeg ${APP_VERSION}`} />
-        <SettingsButtonRow
-          label="Send feedback"
-          onClick={() => {
-            window.location.href = `mailto:hello@example.com?subject=Ajeg%20${APP_VERSION}%20feedback`
-          }}
-        />
       </SettingsGroup>
 
       <input
@@ -332,7 +326,7 @@ function DeleteEverythingSheet({ open, onClose }: { open: boolean; onClose: () =
   }
 
   return (
-    <Sheet open={open} onClose={onClose} title="Delete all data" snapPoints={[0.45]}>
+    <Sheet open={open} onClose={onClose} title="Delete all data" snapPoints={[0.9]}>
       <div className="flex flex-col gap-5">
         <p className="text-body text-ink-2">
           Every task, session and record on this device is removed. This cannot be undone,

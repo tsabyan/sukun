@@ -1,6 +1,7 @@
 'use client'
 
 import { useId } from 'react'
+import type { LucideIcon } from 'lucide-react'
 import { cn } from '@/lib/utils/cn'
 
 const CONTROL = cn(
@@ -16,6 +17,12 @@ interface FieldShellProps {
   hint?: string
   error?: string
   optional?: boolean
+  /**
+   * Hide the eyebrow, keeping it for screen readers. For the one-field forms
+   * where the placeholder and the button already say what the field is and a
+   * label above it only adds a line — the waitlist, the sign-in link.
+   */
+  labelHidden?: boolean
   children: (id: string, describedBy: string | undefined) => React.ReactNode
   className?: string
 }
@@ -25,6 +32,7 @@ function FieldShell({
   hint,
   error,
   optional,
+  labelHidden,
   children,
   className,
 }: FieldShellProps) {
@@ -35,7 +43,13 @@ function FieldShell({
 
   return (
     <div className={cn('flex flex-col gap-2', className)}>
-      <label htmlFor={id} className="eyebrow flex items-center gap-2 text-ink-3">
+      <label
+        htmlFor={id}
+        className={cn(
+          'eyebrow flex items-center gap-2 text-ink-3',
+          labelHidden && 'sr-only',
+        )}
+      >
         {label}
         {optional && <span className="normal-case tracking-normal">(optional)</span>}
       </label>
@@ -58,6 +72,9 @@ type InputProps = Omit<React.InputHTMLAttributes<HTMLInputElement>, 'id'> & {
   hint?: string
   error?: string
   optional?: boolean
+  labelHidden?: boolean
+  /** a quiet glyph inside the control, on the leading edge */
+  icon?: LucideIcon
   wrapperClassName?: string
   /** React 19 takes ref as an ordinary prop — no forwardRef needed */
   ref?: React.Ref<HTMLInputElement>
@@ -68,6 +85,8 @@ export function Field({
   hint,
   error,
   optional,
+  labelHidden,
+  icon: Icon,
   wrapperClassName,
   className,
   ...props
@@ -78,16 +97,27 @@ export function Field({
       hint={hint}
       error={error}
       optional={optional}
+      labelHidden={labelHidden}
       className={wrapperClassName}
     >
       {(id, describedBy) => (
-        <input
-          id={id}
-          aria-describedby={describedBy}
-          aria-invalid={error ? true : undefined}
-          className={cn(CONTROL, error && 'border-ember', className)}
-          {...props}
-        />
+        <div className="relative">
+          {Icon && (
+            <Icon
+              size={17}
+              strokeWidth={1.75}
+              aria-hidden
+              className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-ink-3"
+            />
+          )}
+          <input
+            id={id}
+            aria-describedby={describedBy}
+            aria-invalid={error ? true : undefined}
+            className={cn(CONTROL, Icon && 'pl-11', error && 'border-ember', className)}
+            {...props}
+          />
+        </div>
       )}
     </FieldShell>
   )

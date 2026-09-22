@@ -98,7 +98,7 @@ If day-7 retention lands under 10%, the concept is wrong, not the polish. See [1
 Do **not** build payments in v1. Build the *gate* and the *intent signal*:
 
 - Free tier caps at **10 active tasks** — mirrors the reference app and is a real constraint for the secondary persona.
-- Hitting the cap opens an upsell sheet with the Pro feature list and a single **"Notify me at launch"** email capture.
+- Hitting the cap opens an upsell sheet that states the count — "10 / 10 active tasks on the free plan" — a line on what Ajeg Plus would lift, a single **"Join the waitlist"** email capture, and **"Complete a task instead"** as the way back out. The ticked feature list it used to lead with read as a pricing page for something you cannot buy; issue #8.
 - Emails land in a `waitlist` table. Conversion rate on that button is your willingness-to-pay proxy — at zero cost and zero Stripe integration.
 
 Planned Pro feature set (state it in the sheet so the signal is honest): unlimited tasks, cross-device sync, custom themes, data export, AI subtask breakdown.
