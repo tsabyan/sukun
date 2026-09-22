@@ -12,7 +12,7 @@ import { AddMenu } from './AddMenu'
 import { FULLSCREEN_ROUTES, PRIMARY_NAV, isActive, type NavItem } from './nav'
 
 /**
- * Sukun is a phone app that happens to run in a browser — docs/05-screens.md §0.
+ * Ajeg is a phone app that happens to run in a browser — docs/05-screens.md §0.
  *
  * There is no desktop layout and no side rail. A wide window gets the same
  * single phone-width column, centred on the canvas, so one set of screens is

@@ -68,7 +68,7 @@ export default function SettingsPage() {
     const url = URL.createObjectURL(blob)
     const link = document.createElement('a')
     link.href = url
-    link.download = `sukun-${bundle.exportedAt.slice(0, 10)}.json`
+    link.download = `ajeg-${bundle.exportedAt.slice(0, 10)}.json`
     link.click()
     URL.revokeObjectURL(url)
     toast('Data exported')
@@ -80,7 +80,7 @@ export default function SettingsPage() {
       await importAll(parsed as unknown as ExportBundle)
       toast('Data imported')
     } catch {
-      toast("That file isn't a Sukun export")
+      toast("That file isn't an Ajeg export")
     }
   }
 
@@ -253,11 +253,11 @@ export default function SettingsPage() {
       </SettingsGroup>
 
       <SettingsGroup title="About">
-        <SettingsRow label="Version" description={`Sukun ${APP_VERSION}`} />
+        <SettingsRow label="Version" description={`Ajeg ${APP_VERSION}`} />
         <SettingsButtonRow
           label="Send feedback"
           onClick={() => {
-            window.location.href = `mailto:hello@example.com?subject=Sukun%20${APP_VERSION}%20feedback`
+            window.location.href = `mailto:hello@example.com?subject=Ajeg%20${APP_VERSION}%20feedback`
           }}
         />
       </SettingsGroup>

@@ -43,7 +43,7 @@ export function notifyPhaseEnd(mode: SessionMode, taskTitle?: string | null) {
   try {
     new Notification(title, {
       body: mode === 'focus' && taskTitle ? `${taskTitle} — time for a break.` : body,
-      tag: 'sukun-phase',
+      tag: 'ajeg-phase',
       icon: '/icons/192.png',
       silent: true, // the chime is the sound; two alerts at once is noise
     })

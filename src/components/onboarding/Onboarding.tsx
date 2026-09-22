@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/Button'
 import { HeroCard, HeroWeekBars } from '@/components/ui/HeroCard'
 import { IconTile } from '@/components/ui/IconTile'
 import { Pill } from '@/components/ui/Pill'
-import { Logomark } from '@/components/brand/Logomark'
 import { db, setMeta, META_KEYS } from '@/lib/db/schema'
 import { ONBOARDED_STORAGE_KEY } from '@/lib/theme/script'
 import {
@@ -89,7 +88,7 @@ export function Onboarding() {
       data-onboarding-overlay
       role="dialog"
       aria-modal="true"
-      aria-label="Welcome to Sukun"
+      aria-label="Welcome to Ajeg"
       // No `flex` utility here on purpose: Tailwind's utilities layer wins
       // over the components layer, so a `flex` class would override the
       // `display: none` that hides this and leave the overlay permanently on
@@ -144,7 +143,7 @@ export function Onboarding() {
               onClick={() => void promptInstall().then(finish)}
             >
               <Plus size={16} strokeWidth={2} aria-hidden />
-              Install Sukun
+              Install Ajeg
             </Button>
           ) : (
             <Button
@@ -180,7 +179,7 @@ const COPY = [
   },
   {
     title: 'Keep it on your home screen',
-    body: 'Install Sukun for full-screen focus, offline use and session notifications. It stays this fast.',
+    body: 'Install Ajeg for full-screen focus, offline use and session notifications. It stays this fast.',
   },
 ] as const
 
@@ -241,10 +240,22 @@ function TasksPreview() {
 function InstallPreview() {
   return (
     <div className="flex w-full flex-col items-center gap-3 rounded-xl bg-green px-4 py-8">
-      <span className="inline-flex size-21 items-center justify-center rounded-[26px] bg-ink">
-        <Logomark size={32} className="text-green" />
-      </span>
-      <span className="text-label text-ink">Sukun</span>
+      {/* The actual app icon, at the actual corner radius — this slide is a
+          picture of the home screen, so a stand-in glyph would be a lie. */}
+      {/* eslint-disable-next-line @next/next/no-img-element -- precached asset,
+          shown before the optimiser is warm on a first visit. */}
+      <img
+        src="/icons/192.png"
+        width={84}
+        height={84}
+        alt=""
+        aria-hidden
+        draggable={false}
+        // The icon's own hill is this card's green, so without an edge the
+        // tile dissolves into the background and the mascot reads as floating.
+        className="size-21 select-none rounded-[26px] ring-2 ring-ink/20 shadow-sm"
+      />
+      <span className="text-label text-ink">Ajeg</span>
       <Pill tone="dark">Add to Home Screen</Pill>
     </div>
   )

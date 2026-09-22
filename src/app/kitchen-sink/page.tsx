@@ -9,7 +9,7 @@ import { ChipButton, Pill, PriorityDot } from '@/components/ui/Pill'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { Sheet } from '@/components/ui/Sheet'
 import { Toggle } from '@/components/ui/Toggle'
-import { Logomark, Wordmark } from '@/components/brand/Logomark'
+import { Mascot, Wordmark } from '@/components/brand/Mascot'
 import { useTheme, type Phase, type ThemePreference } from '@/lib/theme/use-theme'
 
 const TASK_COLORS = [
@@ -80,16 +80,16 @@ export default function KitchenSink() {
       <Section title="Brand">
         <div className="flex flex-wrap items-end gap-8">
           <div className="flex flex-col items-center gap-2">
-            <Logomark size={64} className="text-accent" />
-            <span className="eyebrow text-ink-3">mark 64</span>
+            <Mascot size={64} mood="happy" />
+            <span className="eyebrow text-ink-3">mascot 64 · happy</span>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Logomark size={32} className="text-accent" />
-            <span className="eyebrow text-ink-3">32</span>
+            <Mascot size={32} mood="thinking" />
+            <span className="eyebrow text-ink-3">32 · thinking</span>
           </div>
           <div className="flex flex-col items-center gap-2">
-            <Logomark size={20} className="text-ink" />
-            <span className="eyebrow text-ink-3">20 · ink</span>
+            <Mascot size={20} mood="resting" />
+            <span className="eyebrow text-ink-3">20 · resting</span>
           </div>
           <div className="flex flex-col items-start gap-2">
             <Wordmark size={28} />

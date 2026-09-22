@@ -22,7 +22,7 @@ export default function GlobalError({ reset }: { reset: () => void }) {
       >
         <div style={{ maxWidth: 380 }}>
           <h1 style={{ fontSize: 22, fontWeight: 600, margin: '0 0 12px' }}>
-            Sukun could not start
+            Ajeg could not start
           </h1>
           <p style={{ color: '#98A2AE', lineHeight: 1.5, margin: '0 0 20px' }}>
             Your data is still stored on this device. Reloading usually fixes it.

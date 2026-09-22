@@ -1,6 +1,6 @@
 # 05 — Screen Specs
 
-Sukun is a phone app that happens to run in a browser. There is one layout — a
+Ajeg is a phone app that happens to run in a browser. There is one layout — a
 single 440px column, centred at any window width — and every screen below is
 specified at 390px. There is no desktop adaptation, because there is no desktop
 version to adapt: the thumb zone is the whole argument for the bottom bar, and
@@ -63,8 +63,8 @@ every other thing on the page feel like a footnote to a clock.
 
 ```
 ┌──────────────────────────────────┐
-│  ◍  Sukun                    ⚙︎  │
-│     6 day streak · Wednesday     │
+│  Focus                       ⚙︎  │
+│  6 day streak · Wednesday        │
 │                                  │
 │  ┌ Focusing · Update API docs ─┐ │  B2 only — charcoal, tap → /focus
 │  │ 24:13 left · session 3 of 4 ⏸│ │
@@ -95,8 +95,10 @@ every other thing on the page feel like a footnote to a clock.
 
 **Elements**
 
-1. **Header** — charcoal logo tile, "Sukun", and one line of state (streak +
-   weekday). Settings gear on the right. No back button; this is home.
+1. **Header** — "Focus" (the tab's own name) over one line of state (streak +
+   weekday). Settings gear on the right. No back button; this is home. **No
+   logo tile and no wordmark**: the app does not introduce itself on the screen
+   you open ten times a day — docs/04-design-system.md §0.1.
 2. **Now focusing banner** (B2) — renders only while the machine is not idle.
    Charcoal, 64px, taps through to `/focus`, carries one pause/resume control.
 3. **Today hero** — green card. `done/total` across tasks *and* habits, because

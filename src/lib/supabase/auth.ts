@@ -55,7 +55,7 @@ export async function ensureSession(): Promise<Session | null> {
     return data.session
   } catch (error) {
     console.warn(
-      '[sukun] sync unavailable; running local-only',
+      '[ajeg] sync unavailable; running local-only',
       error instanceof Error ? error.message : error,
     )
     useAuthStore.getState().set({ state: 'unconfigured' })

@@ -80,7 +80,7 @@ Free channels, in order. Each one is a separate week so you can tell which audie
 
 **Week 2 — the maker audience.** Product Hunt (free), Hacker News Show HN, Indie Hackers, and a Twitter/X thread built around the Flip Clock screen. The angle for this crowd is the *technical* one: local-first, offline, zero-cost stack. That's the part they'll upvote.
 
-**Week 3 — search.** A short comparison page ("Sukun vs Forest vs Session"), a "best free Pomodoro apps" listicle submission, and an AlternativeTo entry. Slow, compounding, free.
+**Week 3 — search.** A short comparison page ("Ajeg vs Forest vs Session"), a "best free Pomodoro apps" listicle submission, and an AlternativeTo entry. Slow, compounding, free.
 
 **Ongoing.** A changelog page, updated every ship. It costs nothing and it's the single cheapest retention tool a small product has.
 

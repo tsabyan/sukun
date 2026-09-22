@@ -26,13 +26,13 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  title: 'Sukun — Focus Timer',
-  description: 'A calm Pomodoro timer and daily planner. Stillness, on a timer.',
-  applicationName: 'Sukun',
+  title: 'Ajeg — Focus Timer',
+  description: 'A calm Pomodoro timer and daily planner. Steady, day after day.',
+  applicationName: 'Ajeg',
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    title: 'Sukun',
+    title: 'Ajeg',
     statusBarStyle: 'black-translucent',
   },
   // No `icons` block on purpose. Next picks up app/icon.svg, app/icon.png and

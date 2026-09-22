@@ -23,7 +23,7 @@ export function SyncIndicator() {
       <span
         className={cn(
           'block h-full',
-          state === 'syncing' && 'w-1/3 animate-[sukun-sync_1.2s_ease-in-out_infinite] bg-ink-3',
+          state === 'syncing' && 'w-1/3 animate-[ajeg-sync_1.2s_ease-in-out_infinite] bg-ink-3',
           state === 'offline' && 'w-full bg-hairline-strong',
           state === 'stalled' && 'w-full bg-ember/40',
         )}

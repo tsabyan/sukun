@@ -1,4 +1,4 @@
-import { Logomark } from '@/components/brand/Logomark'
+import { Mascot } from '@/components/brand/Mascot'
 
 /**
  * The navigation fallback when a page is not cached and the network is gone.
@@ -10,7 +10,7 @@ import { Logomark } from '@/components/brand/Logomark'
 export default function OfflinePage() {
   return (
     <div className="flex flex-col items-center gap-4 pt-24 text-center">
-      <Logomark size={32} className="text-ink-3" />
+      <Mascot size={72} mood="resting" />
       <h1 className="text-title-l font-display text-ink">No connection</h1>
       <p className="max-w-xs text-body text-ink-2">
         This page is not on the device yet. Your tasks and sessions are — go back and

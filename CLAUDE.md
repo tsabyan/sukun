@@ -1,8 +1,8 @@
-# Sukun — repo rules
+# Ajeg — repo rules
 
 A calm Pomodoro web app. Local-first PWA on Next.js 16 + Supabase, deployed on Vercel.
 
-**Sukun** · سكون — Arabic for *stillness*, and the diacritic that marks a pause. The mark is a small circle; so is the focus ring. Brand spec in `docs/04-design-system.md` §0.1.
+**Ajeg** — Javanese for *steady, the same every time*. The logo is the mascot on the app icon — there is no separate abstract mark. Brand spec in `docs/04-design-system.md` §0.1. Renamed from Sukun; the `sukun` Postgres schema and the local storage names did not follow it — see rules 9 and 12.
 
 ## Read before coding
 
@@ -32,6 +32,7 @@ If the code and a doc disagree, the doc wins — or the doc is wrong and you say
 9. **All Postgres objects live in the `sukun` schema, never `public`.** The database is shared with other apps. New tables need a matching grant — see `supabase/migrations/*_grants.sql` and `docs/08-deployment.md` §2.
 10. **Analytics get events, never user content.** No task titles, notes, or tag names leave the device.
 11. **44px minimum touch targets, visible focus rings, `prefers-reduced-motion` respected.** Not a polish phase — write it this way the first time.
+12. **Local storage names are frozen at `sukun`.** The Dexie database (`src/lib/db/schema.ts`) and the `sukun.theme` / `sukun.phase` / `sukun.onboarded` keys keep their pre-rename names. They are the identity of data already on people's devices; renaming them orphans it. They are invisible to users — leave them.
 
 ## Conventions
 

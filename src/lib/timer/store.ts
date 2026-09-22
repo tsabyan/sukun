@@ -195,7 +195,7 @@ function saveSession(outcome: SessionOutcome) {
       await maybeAskForNotifications()
     })
     .catch((error) => {
-      console.error('[sukun] failed to record session', error)
+      console.error('[ajeg] failed to record session', error)
     })
 }
 

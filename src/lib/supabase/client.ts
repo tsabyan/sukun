@@ -36,11 +36,11 @@ function makeClient() {
   })
 }
 
-export type SukunClient = ReturnType<typeof makeClient>
+export type AjegClient = ReturnType<typeof makeClient>
 
-let client: SukunClient | null = null
+let client: AjegClient | null = null
 
-export function getSupabase(): SukunClient | null {
+export function getSupabase(): AjegClient | null {
   if (!isSupabaseConfigured()) return null
   client ??= makeClient()
   return client
