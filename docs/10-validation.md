@@ -19,7 +19,7 @@ Everything else — pageviews, likes, sign-ups — is noise you can produce with
 
 The app works with no account, on purpose. That makes `auth.users` the wrong number to look at — it counts people who *signed up*, not people who *use the thing*, and most users never will.
 
-So the app writes one row per device per local day to `sukun.device_days`:
+So the app writes one row per device per local day to `device_days`:
 
 - `device_id` — a random UUID generated on the device. Not a fingerprint, not an IP, not derived from anything. It identifies an install, not a person.
 - `local_date` — the user's calendar day.
@@ -31,20 +31,21 @@ Insert-only: there is no UPDATE policy to abuse, and a repeat insert on the same
 
 ```sql
 -- headline: how many people, and how many of them signed up
-select * from sukun.device_totals;
+select * from device_totals;
 
 -- daily actives, split guest vs registered
-select * from sukun.daily_active_devices limit 30;
+select * from daily_active_devices limit 30;
 
 -- new devices per day
 select min(local_date) as joined_on, count(*) as new_devices
 from (select device_id, min(local_date) as local_date
-      from sukun.device_days group by device_id) f
+      from device_days group by device_id) f
 group by 1 order by 1 desc;
 
--- THE number: day-7 retention by signup cohort
+-- opens-based retention. Useful, but it is NOT the number — it counts
+-- coming back, not doing anything. The real one is in §3.
 with first_day as (
-  select device_id, min(local_date) as cohort from sukun.device_days group by 1
+  select device_id, min(local_date) as cohort from device_days group by 1
 )
 select f.cohort,
        count(distinct f.device_id) as joined,
@@ -52,7 +53,7 @@ select f.cohort,
          where d.local_date between f.cohort + 1 and f.cohort + 7
        ) as returned_within_7d
 from first_day f
-left join sukun.device_days d using (device_id)
+left join device_days d using (device_id)
 group by f.cohort order by f.cohort desc;
 ```
 
@@ -62,15 +63,52 @@ group by f.cohort order by f.cohort desc;
 
 ## 3. Instrumentation
 
-Wire these events in Phase 9 (list in [08](08-deployment.md) §7). Three PostHog funnels:
+`device_days` answers *how many people opened the app*. It cannot answer *how many used it*, and that is the question this whole plan turns on. A guest's sessions live in IndexedDB and never leave the device, so the `sessions` table only ever describes the minority who signed in.
 
-1. **Activation** — `app_opened` → `task_created` → `session_started` → `session_completed`. Where the drop happens tells you which screen is broken.
-2. **Habit** — `session_completed` on day 0 → `session_completed` on days 1–7. This is the retention number.
-3. **Willingness to pay** — `pro_gate_hit` → `waitlist_submitted`. Conversion here is your price signal.
+`device_events` closes that gap. One row per (device, local day, event, occurrence), insert-only, pushed through the same outbox as the heartbeat so it works signed out and offline. **Event names only** — no task titles, no notes, no tag names, no durations. The vocabulary is a closed union in `lib/db/types.ts` and a CHECK constraint in migration 013, so adding to it is deliberate in two places.
 
-Two things worth watching beyond the funnels: what fraction of users ever run **Auto-plan** (the planner is the differentiator — if nobody touches it, it isn't one), and what fraction enter **Flip mode** (it's the screenshot feature; low usage means it isn't worth the maintenance).
+```
+app_opened · onboarding_done · task_created · task_completed
+session_started · session_completed · session_skipped
+autoplan_run · habit_checked · pro_gate_hit · waitlist_submitted
+account_linked · pwa_installed
+```
 
-**Never send task titles, notes, or tag names to any analytics service.**
+**No analytics vendor.** PostHog would give a funnel UI for free, and it would also cost a dependency, a third-party script on an app whose measured weakness is hydration cost, and a consent obligation the moment traffic is European. The three views below answer the day-30 questions without any of that. If the numbers justify it later, adding PostHog on top is a day's work.
+
+### The definitions
+
+| Term | Means |
+|------|-------|
+| **Opened** | a `device_days` row — the app was launched |
+| **Activated** | at least one `session_completed`: a focus phase run to its end. This is "actually used it". |
+| **Engaged** | three or more completed sessions in the first seven days |
+| **Retained** | completed a session on day 0 **and** again within days 1–7. **The number.** |
+
+### The dashboard queries
+
+```sql
+-- funnel: opened → onboarded → task → started → completed → installed → signed in
+select * from activation_funnel;
+
+-- THE number, by cohort. cohort_complete = false means it is still filling.
+select * from retention_d7;
+
+-- how heavy the heavy users are, and whether the planner is used at all
+select count(*) filter (where activated)  as activated_devices,
+       count(*) filter (where engaged)    as engaged_devices,
+       round(avg(sessions_completed), 1)  as avg_sessions
+from device_engagement;
+
+-- what actually arrived, by day, when a funnel number looks wrong
+select * from daily_events limit 50;
+```
+
+All four views are revoked from `anon` and `authenticated` and readable only as `service_role` — i.e. from the SQL editor. They are aggregates over a table with no SELECT policy, and how many people use the product is not something to hand out with the JavaScript. Migration 009 is the story of forgetting that once.
+
+Two things worth watching beyond the funnel: what fraction of devices ever run **Auto-plan** (`autoplan_run` — the planner is the differentiator; if nobody touches it, it isn't one), and **`pwa_installed`**, which is the cheapest read available on whether a native app is wanted at all.
+
+**Never send task titles, notes, or tag names to any analytics service, including our own.**
 
 ## 4. Launch sequence
 

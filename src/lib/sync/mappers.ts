@@ -74,16 +74,20 @@ export const REMOTE_TABLE: Record<SyncTable, string> = {
   habitLogs: 'habit_logs',
   waitlist: 'waitlist',
   deviceDays: 'device_days',
+  deviceEvents: 'device_events',
 }
 
 /**
  * Which columns identify a row for upsert.
  *
- * `waitlist` and `deviceDays` are absent on purpose — both are pushed with a
- * plain insert. An upsert needs INSERT and UPDATE policies, and both tables
- * have only the former by design.
+ * `waitlist`, `deviceDays` and `deviceEvents` are absent on purpose — all
+ * three are pushed with a plain insert. An upsert needs INSERT and UPDATE
+ * policies, and these tables have only the former by design.
  */
-export const CONFLICT_TARGET: Record<Exclude<SyncTable, 'waitlist' | 'deviceDays'>, string> = {
+export const CONFLICT_TARGET: Record<
+  Exclude<SyncTable, 'waitlist' | 'deviceDays' | 'deviceEvents'>,
+  string
+> = {
   tasks: 'id',
   subtasks: 'id',
   sessions: 'id',

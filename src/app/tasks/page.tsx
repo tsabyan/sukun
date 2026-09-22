@@ -29,6 +29,7 @@ import {
   getDayStats,
   listTasks,
   live,
+  recordEvent,
   reopenTask,
   restoreTask,
 } from '@/lib/db/repo'
@@ -134,20 +135,30 @@ function TasksScreen() {
   const atLimit = !pro && activeCount >= FREE_TASK_LIMIT
   const showMeter = !pro && activeCount >= FREE_TASK_WARN_AT
 
-  useAddIntent('task', () => (atLimit ? setUpsellOpen(true) : setFormOpen(true)))
+  /**
+   * Every path that hits the wall goes through here, so the event counts the
+   * gate being *reached* rather than the sheet being rendered — the dev hooks
+   * above open the same sheet and must not land in the funnel.
+   */
+  const hitProGate = () => {
+    void recordEvent('pro_gate_hit')
+    setUpsellOpen(true)
+  }
+
+  useAddIntent('task', () => (atLimit ? hitProGate() : setFormOpen(true)))
 
   // Consume the query flag during render; an effect would flash the list first.
   const [handledNew, setHandledNew] = useState(false)
   if (wantsNew && !handledNew) {
     setHandledNew(true)
-    if (atLimit) setUpsellOpen(true)
+    if (atLimit) hitProGate()
     else setFormOpen(true)
   }
 
   const openCreate = () => {
     // The wall, not a nag: the add button itself becomes the upsell.
     if (atLimit) {
-      setUpsellOpen(true)
+      hitProGate()
       return
     }
     setFormOpen(true)
@@ -252,7 +263,7 @@ function TasksScreen() {
         </div>
       )}
 
-      {showMeter && <FreeTierMeter count={activeCount} onOpen={() => setUpsellOpen(true)} />}
+      {showMeter && <FreeTierMeter count={activeCount} onOpen={hitProGate} />}
 
       <TaskListBody
         tasks={tasks}

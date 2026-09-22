@@ -251,9 +251,43 @@ export type SyncTable =
   | 'identities'
   | 'habits'
   | 'habitLogs'
-  /** both insert-only; read from the Supabase dashboard, never from the app */
+  /** all insert-only; read from the Supabase dashboard, never from the app */
   | 'waitlist'
   | 'deviceDays'
+  | 'deviceEvents'
+
+/**
+ * The analytics vocabulary — docs/10-validation.md §3.
+ *
+ * Names only. No task titles, no notes, no tag names, no free text of any
+ * kind reaches this table (CLAUDE.md rule 10), which is why the list is a
+ * closed union here and a check constraint in migration 013: adding a
+ * thirteenth event has to be a deliberate act in both places.
+ */
+export type AnalyticsEvent =
+  | 'app_opened'
+  | 'onboarding_done'
+  | 'task_created'
+  | 'task_completed'
+  | 'session_started'
+  | 'session_completed'
+  | 'session_skipped'
+  | 'autoplan_run'
+  | 'habit_checked'
+  | 'flip_entered'
+  | 'pro_gate_hit'
+  | 'waitlist_submitted'
+  | 'account_linked'
+  | 'pwa_installed'
+
+/** One occurrence of an event on one device on one local day. */
+export interface DeviceEvent {
+  deviceId: string
+  localDate: LocalDate
+  event: AnalyticsEvent
+  seq: number
+  appVersion: string
+}
 
 export interface OutboxEntry {
   id: string

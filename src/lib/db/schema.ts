@@ -104,6 +104,7 @@ export const META_KEYS = {
   notificationsAskedAt: 'notificationsAskedAt',
   deviceId: 'deviceId',
   lastHeartbeatDate: 'lastHeartbeatDate',
+  eventSeq: 'eventSeq',
   isPro: 'isPro',
 } as const
 
