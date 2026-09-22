@@ -67,7 +67,7 @@ every other thing on the page feel like a footnote to a clock.
 │  6 day streak · Wednesday        │
 │                                  │
 │  ┌ Focusing · Update API docs ─┐ │  B2 only — charcoal, tap → /focus
-│  │ 24:13 left · session 3 of 4 ⏸│ │
+│  │ 24:13 left                  ⏸│ │
 │  └──────────────────────────────┘ │
 │  ┌────────────────── green ────┐ │
 │  │ Today          [ Wednesday ]│ │
@@ -99,8 +99,26 @@ every other thing on the page feel like a footnote to a clock.
    weekday). Settings gear on the right. No back button; this is home. **No
    logo tile and no wordmark**: the app does not introduce itself on the screen
    you open ten times a day — docs/04-design-system.md §0.1.
-2. **Now focusing banner** (B2) — renders only while the machine is not idle.
-   Charcoal, 64px, taps through to `/focus`, carries one pause/resume control.
+2. **Now focusing** (B2) — no longer Home's alone. The same charcoal card now
+   renders directly **under the header on every screen** and is **sticky**: the
+   header scrolls away, this does not. A session is the one piece of state that
+   stays true however far down a screen you are, and a pause control you have
+   to scroll back up for is one you stop using. It sits at `z-20` — under the
+   tab bar (30), toasts (40) and sheets (50) — and carries a canvas bleed
+   (`-mx-4`) so content passes behind an opaque strip instead of showing
+   through the corners. It
+   carries one pause/resume control and renders nothing while the machine is
+   idle. `src/components/timer/SessionBanner.tsx`, emitted by `PageHeader`;
+   Home places it by hand under its own header.
+
+   Not on **Settings** — you are there to change the machine, not watch it —
+   and not on `/focus`, which *is* the session. It carries no session counter:
+   the old "session 1 of 4" came from the long-break cycle and read as a claim
+   about the task (see §S2).
+
+   A version floating over the tab bar was built first and rejected: it read as
+   a notification sitting on top of the app rather than as part of the page.
+   Issue #6.
 3. **Today hero** — green card. `done/total` across tasks *and* habits, because
    a day is made of both. Seven bars underneath: focus time per day for the
    trailing week, normalised to that week's maximum; a zero day still draws an
@@ -429,8 +447,14 @@ A page, not a sheet: 22 badges in five groups is a screen's worth of content.
 Green hero with `6 / 22`, the next badge's name and its requirement, and a
 progress bar. Then one card per group — First steps · Sessions · Streaks ·
 Depth · Consistency — each with an `n of m` chip and a three-column grid.
-Locked badges keep their requirement (as a tooltip and for screen readers):
-a goal you cannot see is not a goal.
+Locked badges keep their requirement: a goal you cannot see is not a goal.
+
+**Every tile is a button** (E3b). Tapping one opens a sheet with the badge, its
+state, and the requirement under "How to unlock" — or "What it took" plus the
+date it was earned, for one already held. The requirement used to live only in
+a `title` tooltip and the screen-reader label, which on a phone meant a locked
+badge was a padlock and two words with no way to find out what it wanted.
+Issue #6 follow-up. `src/components/insights/AchievementSheet.tsx`.
 
 Evaluated after every completed session. Unlock shows a single quiet toast —
 badge icon, name, one line. No modal, no confetti.

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { SessionBanner } from '@/components/timer/SessionBanner'
 import { cn } from '@/lib/utils/cn'
 
 /**
@@ -9,6 +10,11 @@ import { cn } from '@/lib/utils/cn'
  * of secondary actions on the right — search, share, a gear. The *primary*
  * action is never here: it lives in the bottom bar, in reach of the thumb.
  * Focus opts out entirely; it carries the brand lockup instead.
+ *
+ * It also emits the running-session banner directly beneath itself, so every
+ * titled screen shows a live session in the same place — docs/05 §B2. The
+ * banner decides for itself where it does not belong (Settings, Focus) and
+ * renders nothing when the timer is idle.
  */
 export function PageHeader({
   title,
@@ -24,14 +30,17 @@ export function PageHeader({
   className?: string
 }) {
   return (
-    <header className={cn('flex min-h-[52px] items-center justify-between gap-3', className)}>
-      <div className="flex min-w-0 items-center gap-1.5">
-        {leading}
-        <h1 className={cn('truncate text-ink', leading ? 'text-title-s' : 'text-title-l')}>
-          {title}
-        </h1>
-      </div>
-      {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
-    </header>
+    <>
+      <header className={cn('flex min-h-[52px] items-center justify-between gap-3', className)}>
+        <div className="flex min-w-0 items-center gap-1.5">
+          {leading}
+          <h1 className={cn('truncate text-ink', leading ? 'text-title-s' : 'text-title-l')}>
+            {title}
+          </h1>
+        </div>
+        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+      </header>
+      <SessionBanner />
+    </>
   )
 }

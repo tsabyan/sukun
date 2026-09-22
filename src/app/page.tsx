@@ -11,7 +11,7 @@ import { StatRow, StatTile } from '@/components/ui/StatTile'
 import { HOME_TASK_ROWS, TodayTasksCard } from '@/components/home/TodayTasksCard'
 import { TodayHabitsCard, type HomeHabit } from '@/components/home/TodayHabitsCard'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
-import { NowFocusingBanner } from '@/components/home/NowFocusingBanner'
+import { SessionBanner } from '@/components/timer/SessionBanner'
 import { TimerAnnouncer } from '@/components/timer/TimerAnnouncer'
 import { getRecentDayTotals, getStreaks, live, toggleHabitDay } from '@/lib/db/repo'
 import { currentStreak, isScheduled, rate30 } from '@/lib/habits/streaks'
@@ -115,7 +115,7 @@ export default function HomePage() {
         </Link>
       </header>
 
-      <NowFocusingBanner />
+      <SessionBanner />
 
       <HeroCard
         title="Today"

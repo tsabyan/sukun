@@ -1,6 +1,6 @@
 'use client'
 
-import { createElement } from 'react'
+import { createElement, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { ChevronLeft, Lock } from 'lucide-react'
@@ -9,7 +9,13 @@ import { HeroCard } from '@/components/ui/HeroCard'
 import { PageHeader } from '@/components/shell/PageHeader'
 import { Pill } from '@/components/ui/Pill'
 import { getAchievements } from '@/lib/db/repo'
-import { ACHIEVEMENTS, ACHIEVEMENT_COUNT, type AchievementGroup } from '@/lib/db/seed'
+import { AchievementSheet } from '@/components/insights/AchievementSheet'
+import {
+  ACHIEVEMENTS,
+  ACHIEVEMENT_COUNT,
+  type AchievementDef,
+  type AchievementGroup,
+} from '@/lib/db/seed'
 import { taskIcon } from '@/lib/tasks/icons'
 import { cn } from '@/lib/utils/cn'
 
@@ -31,11 +37,14 @@ const GROUPS: Array<{ key: AchievementGroup; title: string }> = [
  */
 export default function AchievementsPage() {
   const router = useRouter()
+  // Keyed by badge, valued by the moment it was earned: the sheet shows the
+  // date, so the keys alone are no longer enough.
   const unlocked = useLiveQuery(
-    async () => new Set((await getAchievements()).map((a) => a.key)),
+    async () => new Map((await getAchievements()).map((a) => [a.key, a.unlockedAt])),
     [],
   )
 
+  const [selected, setSelected] = useState<AchievementDef | null>(null)
 
   const earned = unlocked?.size ?? 0
   const next = ACHIEVEMENTS.find((badge) => !unlocked?.has(badge.key))
@@ -85,14 +94,18 @@ export default function AchievementsPage() {
               {badges.map((badge) => {
                 const held = unlocked?.has(badge.key) ?? false
                 return (
-                  <li
-                    key={badge.key}
-                    title={badge.requirement}
-                    className={cn(
-                      'flex flex-col items-center gap-2 rounded-md px-2 py-3 text-center',
-                      held ? 'bg-green-soft' : 'bg-field',
-                    )}
-                  >
+                  <li key={badge.key} className="contents">
+                    {/* A tile is a button: the requirement used to live in a
+                        `title` tooltip, which a phone never shows. */}
+                    <button
+                      type="button"
+                      onClick={() => setSelected(badge)}
+                      aria-label={`${badge.name}. ${held ? 'Unlocked' : 'Locked'}. ${badge.requirement}`}
+                      className={cn(
+                        'flex min-h-[104px] flex-col items-center justify-center gap-2 rounded-md px-2 py-3 text-center',
+                        held ? 'bg-green-soft' : 'bg-field',
+                      )}
+                    >
                     <span
                       aria-hidden
                       className={cn(
@@ -112,10 +125,7 @@ export default function AchievementsPage() {
                     >
                       {badge.name}
                     </span>
-                    <span className="sr-only">
-                      {held ? 'Unlocked. ' : 'Locked. '}
-                      {badge.requirement}
-                    </span>
+                    </button>
                   </li>
                 )
               })}
@@ -123,6 +133,12 @@ export default function AchievementsPage() {
           </Card>
         )
       })}
+
+      <AchievementSheet
+        badge={selected}
+        unlockedAt={selected ? unlocked?.get(selected.key) : undefined}
+        onClose={() => setSelected(null)}
+      />
     </div>
   )
 }
