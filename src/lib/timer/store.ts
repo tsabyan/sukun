@@ -16,6 +16,7 @@ import {
   evaluateAchievements,
   getSettings,
   getTask,
+  recordEvent,
   recordSession,
   updateSettings,
 } from '@/lib/db/repo'
@@ -307,6 +308,9 @@ export const useTimerStore = create<TimerState>((set, get) => {
     start() {
       unlockAudio() // must happen inside the gesture, or iOS stays silent
       dispatch({ type: 'START', now: Date.now(), durations: get().durations })
+      // Started, not completed: the gap between the two is the funnel step
+      // that says people abandon sessions rather than never beginning one.
+      void recordEvent('session_started')
     },
 
     pause() {

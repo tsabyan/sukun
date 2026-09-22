@@ -1,10 +1,10 @@
 -- 004 — sessions, achievements, waitlist
 
-create table if not exists sukun.sessions (
+create table if not exists sessions (
   id                   uuid primary key default gen_random_uuid(),
   user_id              uuid not null references auth.users(id) on delete cascade,
-  task_id              uuid references sukun.tasks(id) on delete set null,
-  mode                 sukun.session_mode not null,
+  task_id              uuid references tasks(id) on delete set null,
+  mode                 session_mode not null,
   planned_duration_sec int not null,
   actual_duration_sec  int not null check (actual_duration_sec >= 0),
   started_at           timestamptz not null,
@@ -23,21 +23,21 @@ create table if not exists sukun.sessions (
 );
 
 create index if not exists sessions_user_date_idx
-  on sukun.sessions (user_id, local_date)
+  on sessions (user_id, local_date)
   where deleted_at is null and mode = 'focus';
 create index if not exists sessions_user_updated_idx
-  on sukun.sessions (user_id, updated_at);
+  on sessions (user_id, updated_at);
 create index if not exists sessions_task_idx
-  on sukun.sessions (task_id) where deleted_at is null;
+  on sessions (task_id) where deleted_at is null;
 
-create table if not exists sukun.achievements (
+create table if not exists achievements (
   user_id     uuid not null references auth.users(id) on delete cascade,
   key         text not null,
   unlocked_at timestamptz not null default now(),
   primary key (user_id, key)
 );
 
-create table if not exists sukun.waitlist (
+create table if not exists waitlist (
   id         uuid primary key default gen_random_uuid(),
   user_id    uuid references auth.users(id) on delete set null,
   email      text not null,
@@ -46,6 +46,6 @@ create table if not exists sukun.waitlist (
   unique (email)
 );
 
-drop trigger if exists t_sessions_updated on sukun.sessions;
-create trigger t_sessions_updated before update on sukun.sessions
-  for each row execute function sukun.set_updated_at();
+drop trigger if exists t_sessions_updated on sessions;
+create trigger t_sessions_updated before update on sessions
+  for each row execute function set_updated_at();

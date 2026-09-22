@@ -64,14 +64,15 @@ export function isReady(entry: OutboxEntry, now: number): boolean {
 /* -------------------------------------------------------------------- push */
 
 /**
- * The two insert-only tables, pushed without needing a session.
+ * The insert-only tables, pushed without needing a session.
  *
- * Both carry signal about people who never sign in, and both would be useless
- * if they waited for an account. Waitlist conversion is the price signal the
- * validation plan rests on; device heartbeats are how guests are counted at
- * all. Stranding either in the outbox would quietly report zero.
+ * All three carry signal about people who never sign in, and all three would
+ * be useless if they waited for an account. Waitlist conversion is the price
+ * signal the validation plan rests on; heartbeats are how guests are counted
+ * at all; events are the only evidence that a guest did more than open the
+ * app. Stranding any of them in the outbox would quietly report zero.
  */
-const ANON_TABLES = ['waitlist', 'deviceDays'] as const
+const ANON_TABLES = ['waitlist', 'deviceDays', 'deviceEvents'] as const
 
 async function pushAnonTables(userId: string | null): Promise<void> {
   const supabase = getSupabase()
@@ -179,7 +180,10 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
         const { error } = await supabase
           .from(REMOTE_TABLE[table])
           .upsert(rows, {
-            onConflict: CONFLICT_TARGET[table as Exclude<SyncTable, 'waitlist' | 'deviceDays'>],
+            onConflict:
+              CONFLICT_TARGET[
+                table as Exclude<SyncTable, 'waitlist' | 'deviceDays' | 'deviceEvents'>
+              ],
           })
         if (error) throw error
       }

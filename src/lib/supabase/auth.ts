@@ -3,6 +3,7 @@
 import { create } from 'zustand'
 import type { Session } from '@supabase/supabase-js'
 import { getSupabase, isSupabaseConfigured, siteUrl } from './client'
+import { recordEvent } from '@/lib/db/repo'
 
 /**
  * Auth, kept deliberately thin — docs/02-architecture.md §5.
@@ -67,8 +68,13 @@ export function watchAuth(): () => void {
   const supabase = getSupabase()
   if (!supabase) return () => {}
 
-  const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+  const { data } = supabase.auth.onAuthStateChange((event, session) => {
     useAuthStore.getState().set({ session, state: classify(session) })
+
+    // SIGNED_IN only, never INITIAL_SESSION: the latter fires on every load
+    // for anyone already signed in, and this is meant to count the moment a
+    // guest becomes an account — the last step of the funnel.
+    if (event === 'SIGNED_IN') void recordEvent('account_linked')
   })
 
   return () => data.subscription.unsubscribe()

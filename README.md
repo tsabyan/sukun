@@ -5,9 +5,9 @@ A focus timer, daily planner, and task manager. Local-first PWA. Deployed free o
 > **Ajeg** — Javanese for *steady, level, the same every time*. Not stillness: regularity.
 > The logo is the mascot on the app icon; there is no second, abstract mark. See [04-design-system.md](docs/04-design-system.md) §0.1.
 >
-> Renamed from Sukun. Two things kept the old name on purpose: the `sukun` Postgres schema
-> (shared database, not branding) and the local IndexedDB / `localStorage` names (renaming them
-> would orphan data already on people's devices).
+> Renamed from Sukun. The local IndexedDB / `localStorage` names still carry the old name on
+> purpose — renaming them would orphan data already on people's devices. The Postgres schema
+> used to as well; it moved to `public` when Ajeg got its own Supabase project.
 
 ## Doc index — read in this order
 

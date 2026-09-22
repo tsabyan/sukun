@@ -16,7 +16,8 @@ import type { SyncTable } from '@/lib/db/types'
  * their tasks.
  */
 
-const ANON: SyncTable[] = ['waitlist', 'deviceDays']
+/** Insert-only, pushed without a session, never pulled — see engine.ts. */
+const ANON: SyncTable[] = ['waitlist', 'deviceDays', 'deviceEvents']
 const SYNCED = (Object.keys(REMOTE_TABLE) as SyncTable[]).filter((t) => !ANON.includes(t))
 
 describe('push order', () => {

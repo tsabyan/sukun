@@ -7,6 +7,7 @@ import { HeroCard, HeroWeekBars } from '@/components/ui/HeroCard'
 import { IconTile } from '@/components/ui/IconTile'
 import { Pill } from '@/components/ui/Pill'
 import { db, setMeta, META_KEYS } from '@/lib/db/schema'
+import { recordEvent } from '@/lib/db/repo'
 import { ONBOARDED_STORAGE_KEY } from '@/lib/theme/script'
 import {
   isIOS,
@@ -77,6 +78,9 @@ export function Onboarding() {
   const finish = () => {
     dismiss()
     void setMeta(META_KEYS.onboardedAt, new Date().toISOString())
+    // Reached the app proper. Skipping counts: the question this answers is
+    // how many people got past the first screen at all, not how many read it.
+    void recordEvent('onboarding_done')
   }
 
   const cards = showInstallCard ? [0, 1, 2] : [0, 1]

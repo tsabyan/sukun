@@ -16,7 +16,14 @@ import { Toggle } from '@/components/ui/Toggle'
 import { ChipButton } from '@/components/ui/Pill'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { toast } from '@/components/ui/Toast'
-import { deleteAllData, exportAll, getSettings, importAll, updateSettings } from '@/lib/db/repo'
+import {
+  APP_VERSION,
+  deleteAllData,
+  exportAll,
+  getSettings,
+  importAll,
+  updateSettings,
+} from '@/lib/db/repo'
 import { exportBundleSchema } from '@/lib/db/validators'
 import { SOUNDS, previewSound } from '@/lib/timer/audio'
 import {
@@ -27,7 +34,13 @@ import { useTimerStore } from '@/lib/timer/store'
 import { setHapticsEnabled } from '@/lib/utils/haptics'
 import type { ExportBundle, Settings } from '@/lib/db/types'
 
-const APP_VERSION = '0.1.0'
+/**
+ * Where feedback goes — docs/10-validation.md §5. A mailto, not a form: the
+ * form is a week of work to receive worse replies, and a reply from a person
+ * is the point. Unset in a build with no address configured, and the row
+ * simply is not offered rather than opening an empty mail client.
+ */
+const FEEDBACK_EMAIL = process.env.NEXT_PUBLIC_FEEDBACK_EMAIL
 
 const MINUTE_CHOICES = {
   focus: [5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 75, 90],
@@ -252,8 +265,28 @@ export default function SettingsPage() {
         />
       </SettingsGroup>
 
-      <SettingsGroup title="About">
+      <SettingsGroup
+        title="About"
+        footnote="Your tasks and sessions stay on this device unless you sign in."
+      >
         <SettingsRow label="Version" description={`Ajeg ${APP_VERSION}`} />
+        <SettingsButtonRow
+          label="Privacy"
+          description="What is stored, and where"
+          onClick={() => router.push('/privacy')}
+        />
+        {FEEDBACK_EMAIL && (
+          <SettingsButtonRow
+            label="Send feedback"
+            description="Opens your mail app"
+            onClick={() => {
+              // The version travels with the message so a bug report arrives
+              // knowing which build produced it.
+              const subject = encodeURIComponent(`Ajeg feedback (${APP_VERSION})`)
+              window.location.href = `mailto:${FEEDBACK_EMAIL}?subject=${subject}`
+            }}
+          />
+        )}
       </SettingsGroup>
 
       <input

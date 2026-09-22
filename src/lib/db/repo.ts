@@ -36,6 +36,7 @@ import { newlyEarned } from '@/lib/stats/achievements'
 import { planDay } from '@/lib/planner/autoplan'
 import type {
   Achievement,
+  AnalyticsEvent,
   CreateTaskInput,
   DayStats,
   ExportBundle,
@@ -168,6 +169,7 @@ export async function createTask(input: CreateTaskInput): Promise<Task> {
     }
   })
 
+  void recordEvent('task_created')
   return task
 }
 
@@ -187,6 +189,7 @@ export async function updateTask(id: string, patch: Partial<Task>): Promise<void
 export async function completeTask(id: string): Promise<void> {
   const now = nowIso()
   await updateTask(id, { status: 'completed', completedAt: now })
+  void recordEvent('task_completed')
 }
 
 export async function reopenTask(id: string): Promise<void> {
@@ -313,6 +316,9 @@ export async function autoPlan(
     }
   })
 
+  // The planner is the differentiator; if nobody runs it, it is not one.
+  // docs/10-validation.md §3.
+  void recordEvent('autoplan_run')
   return { placed: result.placed, overflow: result.overflow.length }
 }
 
@@ -507,6 +513,14 @@ export async function recordSession(draft: SessionDraft): Promise<Session> {
       }
     }
   })
+
+  // The activation signal — docs/10-validation.md §3. A focus phase run to its
+  // end is the difference between someone who opened the app and someone who
+  // used it, and for a guest this event is the only trace of it that leaves
+  // the device.
+  if (session.mode === 'focus') {
+    void recordEvent(session.completed ? 'session_completed' : 'session_skipped')
+  }
 
   return session
 }
@@ -1073,6 +1087,7 @@ export async function toggleHabitDay(habitId: string, day: LocalDate): Promise<b
       done = true
     }
   })
+  if (done) void recordEvent('habit_checked')
   return done
 }
 
@@ -1125,6 +1140,7 @@ export async function joinWaitlist(email: string, source: string): Promise<void>
     })
     await db.meta.put({ key: META_KEYS.waitlistEmail, value: email })
   })
+  void recordEvent('waitlist_submitted')
 }
 
 /* ====================================================== device count */
@@ -1179,6 +1195,73 @@ export async function recordDeviceHeartbeat(date: LocalDate = today()): Promise<
     })
     await db.meta.put({ key: META_KEYS.lastHeartbeatDate, value: date })
   })
+}
+
+/* ================================================== activation events */
+
+/**
+ * The per-day occurrence counters behind `seq`. Kept in one meta row rather
+ * than one row per event so a day's worth of counting is a single read and a
+ * single write, and so the whole thing resets by replacing an object when the
+ * date rolls over.
+ */
+interface EventSeqState {
+  date: LocalDate
+  counts: Partial<Record<AnalyticsEvent, number>>
+}
+
+/**
+ * Records that something was *done*, not merely opened — docs/10-validation.md §3.
+ *
+ * `device_days` counts opens, which cannot distinguish a person who ran four
+ * pomodoros from one who bounced off the first screen. A guest's sessions never
+ * leave the device, so without this the only usage data that exists belongs to
+ * the minority who sign in.
+ *
+ * Event names only. No titles, no notes, no tag names, no free text — the
+ * vocabulary is a closed union here and a check constraint in migration 013.
+ * CLAUDE.md rule 10.
+ *
+ * Never throws and never blocks the caller: a failure to count something is
+ * not a reason for the app to misbehave, so this is called with `void` from
+ * ordinary user paths.
+ */
+export async function recordEvent(
+  event: AnalyticsEvent,
+  date: LocalDate = today(),
+): Promise<void> {
+  // The same condition `assertBrowser` tests, without the throw: a repo call
+  // from the server is a bug worth surfacing, but a *count* from the server is
+  // simply nothing to record.
+  if (typeof indexedDB === 'undefined') return
+
+  try {
+    const id = await deviceId()
+
+    await db.transaction('rw', [db.outbox, db.meta], async () => {
+      const state = await getMeta<EventSeqState>(META_KEYS.eventSeq)
+      const counts = state?.date === date ? { ...state.counts } : {}
+
+      const seq = (counts[event] ?? 0) + 1
+      // The cap matches the constraint in migration 013. Past it the event
+      // still happened and the app still works; it simply stops being counted,
+      // which is the right trade for a number nobody would read anyway.
+      if (seq > 200) return
+
+      counts[event] = seq
+
+      await enqueue('deviceEvents', `${id}:${date}:${event}:${seq}`, 'upsert', {
+        deviceId: id,
+        localDate: date,
+        event,
+        seq,
+        appVersion: APP_VERSION,
+      })
+      await db.meta.put({ key: META_KEYS.eventSeq, value: { date, counts } })
+    })
+  } catch (error) {
+    console.warn('[ajeg] event not recorded', event, error)
+  }
 }
 
 /* ============================================================ live */
@@ -1314,6 +1397,7 @@ export const repo = {
   joinWaitlist,
   deviceId,
   recordDeviceHeartbeat,
+  recordEvent,
   live,
 }
 

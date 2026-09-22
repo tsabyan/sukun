@@ -26,6 +26,16 @@ async function wipe() {
   resetIdentityCache()
 }
 
+/** Polls until the callback returns something, for fire-and-forget writes. */
+async function waitFor<T>(read: () => Promise<T | null>, tries = 50): Promise<T> {
+  for (let i = 0; i < tries; i++) {
+    const value = await read()
+    if (value) return value
+    await new Promise((resolve) => setTimeout(resolve, 5))
+  }
+  throw new Error('waitFor: nothing arrived')
+}
+
 beforeEach(wipe)
 
 describe('tasks', () => {
@@ -345,6 +355,80 @@ describe('device heartbeat', () => {
       'deviceId',
       'localDate',
     ])
+  })
+})
+
+describe('activation events', () => {
+  it('numbers repeat occurrences on the same day', async () => {
+    await repo.recordEvent('session_completed', '2026-08-02')
+    await repo.recordEvent('session_completed', '2026-08-02')
+    await repo.recordEvent('session_completed', '2026-08-02')
+
+    // Sorted, not assumed: the outbox is keyed by a random id, so a plain
+    // index scan hands them back in whatever order the keys fell.
+    const queued = await db.outbox.where('table').equals('deviceEvents').toArray()
+    const seqs = queued.map((e) => (e.payload as { seq: number }).seq).sort()
+    expect(seqs).toEqual([1, 2, 3])
+  })
+
+  it('counts each event separately and restarts the count on a new day', async () => {
+    await repo.recordEvent('task_created', '2026-08-02')
+    await repo.recordEvent('session_completed', '2026-08-02')
+    await repo.recordEvent('session_completed', '2026-08-03')
+
+    const queued = await db.outbox.where('table').equals('deviceEvents').toArray()
+    const rows = queued
+      .map((e) => e.payload as { event: string; localDate: string; seq: number })
+      .map((r) => `${r.localDate} ${r.event} ${r.seq}`)
+      .sort()
+
+    expect(rows).toEqual([
+      '2026-08-02 session_completed 1',
+      '2026-08-02 task_created 1',
+      '2026-08-03 session_completed 1',
+    ])
+  })
+
+  it('shares the device id with the heartbeat', async () => {
+    await repo.recordDeviceHeartbeat('2026-08-02')
+    await repo.recordEvent('app_opened', '2026-08-02')
+
+    const [beat] = await db.outbox.where('table').equals('deviceDays').toArray()
+    const [event] = await db.outbox.where('table').equals('deviceEvents').toArray()
+
+    expect((event.payload as { deviceId: string }).deviceId).toBe(
+      (beat.payload as { deviceId: string }).deviceId,
+    )
+  })
+
+  it('carries a name and nothing a person wrote', async () => {
+    await repo.createTask({ title: 'Something private' })
+
+    // createTask records the event without awaiting it — counting must never
+    // hold up a write — so the row lands a few turns later.
+    const [entry] = await waitFor(async () => {
+      const rows = await db.outbox.where('table').equals('deviceEvents').toArray()
+      return rows.length > 0 ? rows : null
+    })
+
+    const payload = entry.payload as Record<string, unknown>
+    expect(Object.keys(payload).sort()).toEqual([
+      'appVersion',
+      'deviceId',
+      'event',
+      'localDate',
+      'seq',
+    ])
+    expect(JSON.stringify(payload)).not.toContain('Something private')
+    expect(payload.event).toBe('task_created')
+  })
+
+  it('stops counting past the cap rather than writing unbounded rows', async () => {
+    for (let i = 0; i < 205; i++) await repo.recordEvent('session_started', '2026-08-02')
+
+    const queued = await db.outbox.where('table').equals('deviceEvents').toArray()
+    const starts = queued.filter((e) => (e.payload as { event: string }).event === 'session_started')
+    expect(starts).toHaveLength(200)
   })
 })
 

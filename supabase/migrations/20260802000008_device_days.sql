@@ -16,7 +16,7 @@
 -- a repeat insert on the same day a harmless duplicate-key error rather than
 -- something the client has to coordinate.
 
-create table if not exists sukun.device_days (
+create table if not exists device_days (
   -- A random uuid generated on the device. Not derived from anything: no
   -- fingerprint, no IP, no account. It identifies an install, not a person.
   device_id   uuid not null,
@@ -29,39 +29,39 @@ create table if not exists sukun.device_days (
   primary key (device_id, local_date)
 );
 
-create index if not exists device_days_date_idx on sukun.device_days (local_date);
+create index if not exists device_days_date_idx on device_days (local_date);
 
-alter table sukun.device_days enable row level security;
+alter table device_days enable row level security;
 
 -- Insert-only from the app, exactly like the waitlist. Nothing reads this back
 -- in the client; the numbers are read from the Supabase dashboard.
-drop policy if exists "device heartbeat insert" on sukun.device_days;
-create policy "device heartbeat insert" on sukun.device_days
+drop policy if exists "device heartbeat insert" on device_days;
+create policy "device heartbeat insert" on device_days
   for insert
   to anon, authenticated
   with check (true);
 
-grant insert on sukun.device_days to anon, authenticated;
-grant all on sukun.device_days to service_role;
+grant insert on device_days to anon, authenticated;
+grant all on device_days to service_role;
 
 -- Convenience for the dashboard. security_invoker is deliberately NOT set:
 -- these are aggregate counts with no per-user rows, read by the owner via the
 -- SQL editor, and the base table has no select policy at all.
-create or replace view sukun.daily_active_devices as
+create or replace view daily_active_devices as
 select
   local_date,
   count(distinct device_id)                                    as devices,
   count(distinct device_id) filter (where user_id is not null) as registered,
   count(distinct device_id) filter (where user_id is null)     as guests
-from sukun.device_days
+from device_days
 group by local_date
 order by local_date desc;
 
-create or replace view sukun.device_totals as
+create or replace view device_totals as
 with first_seen as (
   select device_id, min(local_date) as joined_on, max(local_date) as last_seen,
          bool_or(user_id is not null) as has_account
-  from sukun.device_days
+  from device_days
   group by device_id
 )
 select

@@ -19,18 +19,18 @@
 -- since device_days has no SELECT policy the answer would always be zero rows.
 -- The view is meant to be privileged; it just should not be public.
 
-revoke all on sukun.daily_active_devices from anon, authenticated;
-revoke all on sukun.device_totals       from anon, authenticated;
+revoke all on daily_active_devices from anon, authenticated;
+revoke all on device_totals       from anon, authenticated;
 
-grant select on sukun.daily_active_devices to service_role;
-grant select on sukun.device_totals       to service_role;
+grant select on daily_active_devices to service_role;
+grant select on device_totals       to service_role;
 
 -- Migration 006's default privileges would re-grant these to anon on any view
 -- added later, so narrow them to tables only from here on. Existing grants are
 -- untouched; daily_focus and weekly_focus keep theirs and stay safe, because
 -- they are security_invoker and therefore return only the caller's own rows.
-alter default privileges in schema sukun
+alter default privileges in schema public
   revoke all on tables from anon, authenticated;
 
-alter default privileges in schema sukun
+alter default privileges in schema public
   grant select, insert, update, delete on tables to anon, authenticated;

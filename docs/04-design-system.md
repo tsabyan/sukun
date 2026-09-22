@@ -114,7 +114,7 @@ The name sets the register. Plain, unhurried, never exclamatory — *ajeg* is a 
 
 For an Indonesian or Javanese audience *ajeg* needs no gloss — it reads as "consistent" on sight, which is the whole pitch. For English channels it is an opaque four-letter word, so first mention pairs it with the tagline. That is the trade the name makes: instantly meaningful at home, a blank slate abroad.
 
-Before the domain purchase: check `ajeg.app`, `ajeg.so`, `getajeg.com`, and run a trademark search in the classes for software. This is unverified. Note the Postgres schema stays `sukun` — it is shared infrastructure, not branding (rule 9 in CLAUDE.md).
+Before the domain purchase: check `ajeg.app`, `ajeg.so`, `getajeg.com`, and run a trademark search in the classes for software. This is unverified. The Postgres schema no longer carries the old name; only the on-device storage names do (rule 12 in CLAUDE.md).
 
 ---
 
@@ -199,7 +199,7 @@ Small dots and left rails only. Never a filled row, never a background.
 ### Task colors
 
 Eight options for the task icon tile. The *names* are persisted in Postgres (a
-CHECK constraint on `sukun.tasks.color`), so the set is fixed; v2 only retunes
+CHECK constraint on `tasks.color`), so the set is fixed; v2 only retunes
 the values. `sage` is the brand green and the default, `moss` its lime sibling.
 
 ```

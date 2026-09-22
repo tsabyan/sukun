@@ -22,15 +22,15 @@ Because the app is local-first, this is a soft failure — the app still works o
 
 ## 2. Supabase setup
 
-### Everything lives in the `sukun` schema, not `public`
+### Ajeg has its own project, and everything lives in `public`
 
-This project's database is shared with other applications — it already carries `stash` and `tend` schemas. `public` is not ours to take: an app that scatters tables called `tasks` and `sessions` into a shared public schema will collide with a neighbour eventually, and the collision surfaces as a baffling RLS failure rather than an obvious error.
+Until 2026-09-22 this app was a tenant in a shared database, in a schema called `sukun`, because `public` was not ours to take. A dedicated project removes that constraint and three silent failure modes with it: the Exposed-schemas setting, the explicit grant block, and `db: { schema }` on every client.
 
-Three consequences, and all three are silent failures if missed:
+What replaces them is one rule, and it is not optional: **`public` grants `anon` and `authenticated` broadly by default, so a table created without RLS is world-readable the moment it exists.** In the old schema a missing grant made a new table invisible, which failed loudly. Here a missing `enable row level security` makes it public, which fails silently. Every migration that creates a table enables RLS in the same file — CLAUDE.md rule 9.
 
-1. **PostgREST does not expose a non-public schema until you list it.** Every query returns `PGRST106 Invalid schema` until then.
-2. **Supabase's default grants only cover `public`.** Usage and table privileges must be granted explicitly — including *default* privileges, or the next table added in a later migration is invisible to the API. Migration `…_grants.sql` does this.
-3. **The client must set `db: { schema: 'sukun' }`.** Without it the client queries `public` and 404s.
+Two things did *not* move: the Dexie database name and the `sukun.*` `localStorage` keys. They are the identity of data already on people's devices (rule 12).
+
+**If you are coming from the old project:** create the new one, run the migrations below, put its URL and anon key in the env vars, and treat the old project's rows as gone. There is no migration path written for them and none is needed — nothing was launched.
 
 ### Apply the schema
 
@@ -48,7 +48,7 @@ supabase db push
 
 | Setting | Value |
 |---------|-------|
-| Settings → API → **Exposed schemas** | **Add `sukun`** alongside whatever is already there. Nothing works until this is set. |
+| Settings → API → **Exposed schemas** | Leave as `public`. Nothing else is needed now that the app has its own project. |
 | Authentication → Providers → **Anonymous sign-ins** | **Disabled.** The app never uses it — signed out means no session at all, and the client runs on IndexedDB. Leaving it on is an open door with nothing behind it. |
 | Authentication → Providers → **Google** | **Enabled.** The primary sign-in. Needs a Client ID + Secret from Google Cloud — see below. |
 | Authentication → Providers → Email | Enabled, **Confirm email on**, magic link only. The secondary "or" option under Google. |
@@ -98,9 +98,20 @@ The anon key is public, so these are safe to run anywhere:
 set -a; . ./.env; set +a
 K="$NEXT_PUBLIC_SUPABASE_ANON_KEY"; U="$NEXT_PUBLIC_SUPABASE_URL"
 
-# schema exposed and migrated? expects [] rather than an error
+# migrated and reachable? expects [] rather than an error
 curl -s "$U/rest/v1/tasks?select=id&limit=1" \
-  -H "apikey: $K" -H "Authorization: Bearer $K" -H "Accept-Profile: sukun"
+  -H "apikey: $K" -H "Authorization: Bearer $K"
+
+# RLS actually on? every one of these must return [] and not rows
+for t in tasks sessions settings profiles habits; do
+  echo -n "$t: "
+  curl -s "$U/rest/v1/$t?select=*&limit=1" -H "apikey: $K" -H "Authorization: Bearer $K"
+  echo
+done
+
+# metric views must NOT be readable with the anon key
+curl -s "$U/rest/v1/device_totals?select=*" -H "apikey: $K" -H "Authorization: Bearer $K"
+curl -s "$U/rest/v1/activation_funnel?select=*" -H "apikey: $K" -H "Authorization: Bearer $K"
 
 # anonymous sign-ins off? expects anonymous_provider_disabled
 curl -s -X POST "$U/auth/v1/signup" -H "apikey: $K" \
@@ -126,8 +137,11 @@ vercel link
 vercel env add NEXT_PUBLIC_SUPABASE_URL production
 vercel env add NEXT_PUBLIC_SUPABASE_ANON_KEY production
 vercel env add NEXT_PUBLIC_SITE_URL production
-vercel env add CRON_SECRET production
+vercel env add CRON_SECRET production          # any long random string
+vercel env add NEXT_PUBLIC_FEEDBACK_EMAIL production
 ```
+
+`NEXT_PUBLIC_FEEDBACK_EMAIL` is the address behind Settings → About → Send feedback. Leave it unset and the row is not offered — which is worse than it sounds, because a launch with no way to reach you wastes the feedback the launch exists to collect.
 
 Connect the GitHub repo for automatic preview deploys on every branch. Production deploys from `main`.
 
@@ -159,28 +173,23 @@ Vercel Hobby allows cron jobs but **only runs them once per day**, at an unguara
 { "crons": [{ "path": "/api/cron/keepalive", "schedule": "0 6 * * *" }] }
 ```
 
-```ts
-// src/app/api/cron/keepalive/route.ts
-import { createClient } from '@supabase/supabase-js'
+Both exist in the repo: `vercel.json` and `src/app/api/cron/keepalive/route.ts`. The route refuses to run at all when `CRON_SECRET` is unset — an open endpoint that queries the database on request is not a thing to leave lying around, and an unset env var should fail in the one place that can see it.
 
-export async function GET(req: Request) {
-  const auth = req.headers.get('authorization')
-  if (auth !== `Bearer ${process.env.CRON_SECRET}`) {
-    return new Response('Unauthorized', { status: 401 })
-  }
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  )
-  // any query counts as activity; head+count reads no rows
-  const { error } = await supabase.from('waitlist').select('id', { count: 'exact', head: true })
-  return Response.json({ ok: !error, at: new Date().toISOString() })
-}
+Vercel sends the `CRON_SECRET` as a bearer token automatically when the env var is set. Verify after the first deploy:
+
+```bash
+curl -s -H "Authorization: Bearer $CRON_SECRET" https://yourdomain.com/api/cron/keepalive
+# {"ok":true,"error":null,"at":"..."}
 ```
 
-Vercel sends the `CRON_SECRET` as a bearer token automatically when the env var is set.
+**Belt and braces:** `.github/workflows/keepalive.yml` hits the same endpoint on the same schedule. If the Vercel deployment is ever paused, deleted or mid-rollback, the Action still keeps Supabase awake — and it costs nothing. It needs two repository secrets (Settings → Secrets and variables → Actions):
 
-**Belt and braces:** add a GitHub Action on the same schedule hitting the same endpoint. If the Vercel deployment is ever paused, the Action still keeps Supabase awake — and it costs nothing.
+| Secret | Value |
+|--------|-------|
+| `KEEPALIVE_URL` | `https://yourdomain.com/api/cron/keepalive` |
+| `CRON_SECRET` | the same string as the Vercel env var |
+
+Run it once by hand from the Actions tab after the first deploy; a red run is the earliest warning you will get that the endpoint is wrong.
 
 ---
 
@@ -234,26 +243,14 @@ If you buy one: add it in Vercel → Domains, update Supabase Site URL and redir
 
 ## 7. Analytics on the free tier
 
-You need retention numbers, and you need them without a bill.
+There is no analytics vendor. Usage is measured by two insert-only tables in our own database — `device_days` for opens and `device_events` for what was actually done — read through four views in the SQL editor. The reasoning, the event vocabulary and the queries are in [10 §3](10-validation.md#3-instrumentation).
 
 | Tool | Free tier | Use for |
 |------|-----------|---------|
-| **Vercel Web Analytics** | 2,500 events/mo on Hobby | Pageviews, referrers. Zero config. |
-| **PostHog Cloud** | 1M events/mo | Funnels, retention cohorts, session counts. This is the one that answers "is day-7 retention above 20%". |
-| **Supabase** | — | Waitlist conversions, straight from the table |
+| **Our own tables** | free | Activation funnel, day-7 retention, engagement, install rate |
+| **Vercel Web Analytics** | 2,500 events/mo on Hobby | Pageviews and referrers, if you want to know which launch post worked |
 
-Events worth tracking, and no others:
-
-```
-app_opened · session_started · session_completed · session_skipped
-task_created · task_completed · autoplan_run
-flip_mode_entered · pro_gate_hit · waitlist_submitted
-account_linked · pwa_installed
-```
-
-Track *events*, never task titles or notes. A productivity app that ships user content to an analytics vendor deserves the review it gets.
-
----
+Track *events*, never task titles or notes. A productivity app that ships user content to an analytics vendor deserves the review it gets — and that rule does not soften because the vendor is us.
 
 ## 8. Pre-launch checklist
 
@@ -268,9 +265,13 @@ Track *events*, never task titles or notes. A productivity app that ships user c
 □ Installed to an iPhone Home Screen and an Android home screen
 □ Offline: airplane mode, full session, reconnect, data intact
 □ Backgrounded 25-minute session drifts < 1s
-□ Analytics events firing (check PostHog live view)
+□ Events firing — `select * from daily_events;` shows today's rows
+□ Metric views NOT readable with the anon key (the curl in §2)
 □ Waitlist insert works and is readable in the dashboard
-□ Privacy page exists and is honest about what's stored where
+□ Privacy page exists and is honest about what's stored where — /privacy
+□ Feedback row opens a mail client with the version in the subject
+□ /dev/seed and /kitchen-sink return 404 on the deployed build
+□ Security headers present — `curl -sI https://yourdomain.com | grep -i 'content-security\|frame\|referrer'`
 □ Error boundary on every route — a white screen loses the user permanently
 ```
 

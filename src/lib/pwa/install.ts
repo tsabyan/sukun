@@ -2,6 +2,7 @@
 
 import { useSyncExternalStore } from 'react'
 import { create } from 'zustand'
+import { recordEvent } from '@/lib/db/repo'
 
 /**
  * Install affordances — docs/05-screens.md A3, docs/08-deployment.md §5.
@@ -66,7 +67,12 @@ export function watchInstallPrompt(): () => void {
     event.preventDefault()
     useInstallStore.getState().set(event as InstallPrompt)
   }
-  const onInstalled = () => useInstallStore.getState().set(null)
+  const onInstalled = () => {
+    useInstallStore.getState().set(null)
+    // Install rate is the closest free read on whether a native app is wanted;
+    // on iOS it is also the gate on notifications working at all.
+    void recordEvent('pwa_installed')
+  }
 
   window.addEventListener('beforeinstallprompt', onPrompt)
   window.addEventListener('appinstalled', onInstalled)
