@@ -1,0 +1,33 @@
+# Belt and braces for the Supabase pause window — docs/08-deployment.md §4.
+#
+# Vercel already runs the same endpoint once a day. This exists for the case
+# Vercel cannot cover: a deployment that is paused, deleted or mid-rollback
+# still leaves the database seven days from sleeping, and a sleeping database
+# is the one failure in this stack that every user sees at once.
+name: keepalive
+
+on:
+  schedule:
+    # 06:20 UTC, deliberately not on the hour: GitHub delays cron runs that
+    # land on a popular minute.
+    - cron: '20 6 * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping the keep-alive endpoint
+        env:
+          URL: ${{ secrets.KEEPALIVE_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          if [ -z "$URL" ] || [ -z "$CRON_SECRET" ]; then
+            echo "KEEPALIVE_URL or CRON_SECRET is not set in repository secrets"
+            exit 1
+          fi
+          code=$(curl -s -o /tmp/body -w '%{http_code}' \
+            -H "Authorization: Bearer $CRON_SECRET" "$URL")
+          cat /tmp/body
+          echo
+          test "$code" = "200"
