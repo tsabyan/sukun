@@ -20,6 +20,12 @@ import type { NextConfig } from 'next'
  * defend against an injection vector it does not have — no user-generated
  * HTML is ever rendered, and there are no third-party scripts at all.
  *
+ * `'unsafe-eval'` is added in development and only there. React's development
+ * build uses eval() to reconstruct call stacks from another environment, so a
+ * dev server under the production CSP throws on every error overlay. Guarding
+ * it on NODE_ENV keeps the deployed policy exactly as strict as it reads,
+ * while the local one stops fighting the debugger.
+ *
  * So the value here is in the other directives, and they are real:
  *   - `frame-ancestors` / X-Frame-Options stop the app being framed, which is
  *     the actual clickjacking risk for a one-tap UI.
@@ -28,16 +34,20 @@ import type { NextConfig } from 'next'
  *   - `base-uri` and `form-action` close the two classic redirect tricks.
  *   - `object-src 'none'` retires the plugin surface entirely.
  */
+const dev = process.env.NODE_ENV === 'development'
+
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline'",
+  `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ''}`,
   "style-src 'self' 'unsafe-inline'",
   // data: for the inlined mascot and icon variants; blob: for canvas exports.
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
   // next/font self-hosts, so there is no font CDN here. Supabase is the only
   // origin this app is ever allowed to reach.
-  "connect-src 'self' https://*.supabase.co",
+  // ws: is the dev server's hot-reload socket, which does not exist in a
+  // production build.
+  `connect-src 'self' https://*.supabase.co${dev ? ' ws: http://localhost:*' : ''}`,
   "media-src 'self'",
   "worker-src 'self' blob:",
   "manifest-src 'self'",
@@ -45,7 +55,9 @@ const csp = [
   "base-uri 'self'",
   "form-action 'self'",
   "object-src 'none'",
-  'upgrade-insecure-requests',
+  // Omitted in development: the dev server is plain http on localhost, and
+  // there is nothing to upgrade to.
+  ...(dev ? [] : ['upgrade-insecure-requests']),
 ].join('; ')
 
 const securityHeaders = [
