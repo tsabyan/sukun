@@ -40,3 +40,19 @@ export async function pendingCount(): Promise<number> {
 export async function clearOutbox() {
   await db.outbox.clear()
 }
+
+/**
+ * Put every failed entry back at the front of the queue.
+ *
+ * Only ever called from a deliberate "Sync now": a person pressing the button
+ * is telling us that whatever was rejecting these rows — a signed-out session,
+ * a paused project, a policy that has since been fixed — is worth testing
+ * again right now rather than at the end of the next backoff. `createdAt` is
+ * left alone so the order of intent survives the reset.
+ *
+ * Returns how many entries were revived, so the caller can say nothing at all
+ * when the answer is zero.
+ */
+export async function resetAttempts(): Promise<number> {
+  return db.outbox.filter((entry) => entry.attempts > 0).modify({ attempts: 0 })
+}

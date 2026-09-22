@@ -96,6 +96,37 @@ export const CONFLICT_TARGET: Record<Exclude<SyncTable, 'waitlist' | 'deviceDays
   habitLogs: 'habit_id,day',
 }
 
+/**
+ * Tables with no `updated_at`, pulled whole every time rather than by delta.
+ *
+ * `task_tags` is a join row that is only ever created or removed, and
+ * `achievements` is append-only — a badge is unlocked once and the row never
+ * changes again. Neither carries the column, so asking for `updated_at > cursor`
+ * is a 42703 that takes the whole sync cycle down with it (issue #8). Both are
+ * tiny; pulling them whole costs nothing.
+ */
+export const FULL_PULL_TABLES: SyncTable[] = ['taskTags', 'achievements']
+
+/**
+ * Push order. Foreign keys point up this chain, so a child pushed before its
+ * parent is a 23503 — a session whose task has not landed yet, a habit log
+ * before its habit. The outbox's own oldest-first order does not guarantee it:
+ * the batches are keyed by table, and a session written seconds after its task
+ * can still be batched first.
+ */
+export const PUSH_ORDER: SyncTable[] = [
+  'settings',
+  'tags',
+  'tasks',
+  'subtasks',
+  'taskTags',
+  'sessions',
+  'achievements',
+  'identities',
+  'habits',
+  'habitLogs',
+]
+
 /** Tables the pull step walks, in dependency order. */
 export const PULL_TABLES: SyncTable[] = [
   'settings',
