@@ -32,9 +32,9 @@ Set up the Next.js 16 project in this directory:
   doc 04 §4. Respect prefers-reduced-motion.
 - App shell: bottom tab bar on mobile with safe-area inset, left rail at ≥1024px.
   Tabs: Timer, Plan, Tasks, Report.
-- Logomark component per doc 04 §0.1: one SVG circle, 40° gap opening at the
-  top-right from 12 o'clock, round caps, stroke = currentColor so it inherits
-  --accent and re-tints with the timer phase. Plus the side-by-side wordmark
+- Mascot component per doc 04 §0.1: `<Mascot size mood />`, a plain `<img>`
+  onto `public/images/mascot/<mood>.png`. There is no vector logomark — the
+  character on the app icon is the whole identity, and it does not re-tint. Plus the side-by-side wordmark
   lockup for the header.
 - A /kitchen-sink route rendering every component in every state.
 

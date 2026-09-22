@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Sheet } from '@/components/ui/Sheet'
 import { Button } from '@/components/ui/Button'
-import { ChipButton, Pill } from '@/components/ui/Pill'
+import { ChipButton } from '@/components/ui/Pill'
 import { ALL_DAYS, DOW } from '@/lib/habits/streaks'
 import { cn } from '@/lib/utils/cn'
 import type { Identity } from '@/lib/db/types'
@@ -27,6 +27,7 @@ export function NewHabitSheet({
   identities,
   identityId,
   onPickIdentity,
+  onAddIdentity,
   onCreate,
 }: {
   open: boolean
@@ -35,6 +36,8 @@ export function NewHabitSheet({
   /** the identity the habit lands under; null until one is chosen */
   identityId: string | null
   onPickIdentity: (id: string) => void
+  /** first run: there is nothing to file the habit under yet */
+  onAddIdentity: () => void
   onCreate: (input: { identityId: string; name: string; schedule: number[] }) => void
 }) {
   const [name, setName] = useState('')
@@ -88,7 +91,17 @@ export function NewHabitSheet({
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-body text-ink-2">For</span>
           {identities.length === 0 ? (
-            <Pill tone="danger">Add an identity first</Pill>
+            // Was a red pill stating a fact you could not act on. A habit
+            // needs an identity, so the thing that says so is the way to make
+            // one — issue #6.
+            <button
+              type="button"
+              onClick={onAddIdentity}
+              className="inline-flex h-11 items-center gap-1.5 rounded-full bg-field px-4 text-label text-ink"
+            >
+              <Plus size={16} strokeWidth={2} aria-hidden />
+              Add an identity first
+            </button>
           ) : (
             identities.map((identity) => (
               <ChipButton

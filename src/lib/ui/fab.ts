@@ -8,34 +8,14 @@ import { create } from 'zustand'
  *
  * A top-right "+" is the hardest place on a phone to reach, so the primary
  * action lives in the middle of the bottom bar. It means the same thing on
- * every screen: open the Add menu. A screen that changed the button's meaning
- * under you would make the one control you always reach for the one you have
- * to read first.
+ * every screen: open the Add menu.
  *
- * Screens that are not a place to add anything — a task, a habit, an identity,
- * the achievements list — hide it instead.
+ * It is on *every* screen that has the bar, detail screens included. Hiding it
+ * on a few of them — task, habit, identity, achievements — meant the bar
+ * changed shape as you moved through the app, and the one control always under
+ * the thumb was missing exactly where you had just finished reading something
+ * and wanted to add the next one.
  */
-interface FabState {
-  hidden: boolean
-  setHidden: (hidden: boolean) => void
-}
-
-export const useFabStore = create<FabState>((set) => ({
-  hidden: false,
-  setHidden: (hidden) => set({ hidden }),
-}))
-
-/** Hides the add button for as long as this screen is mounted. */
-export function useHideFab(hidden = true) {
-  const setHidden = useFabStore((s) => s.setHidden)
-
-  useEffect(() => {
-    setHidden(hidden)
-    // Cleanup runs before the next screen's effect, so a route change never
-    // leaves the button hidden behind.
-    return () => setHidden(false)
-  }, [setHidden, hidden])
-}
 
 /* ------------------------------------------------------------------ intent */
 

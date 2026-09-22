@@ -29,7 +29,7 @@ import type {
  *    rows are the overwhelming majority, so the filter runs in JS instead.
  */
 
-export class SukunDB extends Dexie {
+export class AjegDB extends Dexie {
   tasks!: EntityTable<Task, 'id'>
   subtasks!: EntityTable<Subtask, 'id'>
   tags!: EntityTable<Tag, 'id'>
@@ -46,6 +46,9 @@ export class SukunDB extends Dexie {
   meta!: EntityTable<MetaEntry, 'key'>
 
   constructor() {
+    // The IndexedDB database keeps its original name through the Ajeg rename.
+    // It is the identity of every installed copy's local data; renaming it
+    // would orphan every task, session and habit already on a device.
     super('sukun')
 
     this.version(1).stores({
@@ -77,7 +80,7 @@ export class SukunDB extends Dexie {
  * — so a module-level instance is safe during SSR and prerender. Anything that
  * actually reads or writes must run in the browser.
  */
-export const db = new SukunDB()
+export const db = new AjegDB()
 
 export function assertBrowser(operation: string) {
   if (typeof indexedDB === 'undefined') {

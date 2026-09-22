@@ -15,6 +15,7 @@ positive state in the app. Four colours do the whole job:
 | `#FFFFFF` | surface | cards, sheets, the active tab |
 | `#292A2C` | ink | text, the tab capsule, the "done" step of a scale |
 | `#9CD237` | green | the hero of every screen, and the one floating action |
+| `#F4F5EF` | brand-ground | the cream disc under the mascot, in both themes |
 
 The move that makes it feel like a product rather than a theme: **one green
 hero card at the top of every screen**, carrying the single number that screen
@@ -32,65 +33,88 @@ Theme setting that already shipped keeps working; it is not a designed pass.
 
 ---
 
-## 0.1 Brand: Sukun
+## 0.1 Brand: Ajeg
 
-**Sukun** · سكون — Arabic for *stillness, quiet*. It's also the name of the diacritic ( ـْ ) placed above a letter to mark that it carries no vowel: a stop. In Quranic recitation it's the sign to hold.
+*Renamed from Sukun. The Arabic diacritic that gave the old name its ring mark
+is gone with it; nothing of that identity survives but the mascot icon, which
+was never tied to the word.*
 
-So the name means both halves of the product at once — the stillness you're trying to reach, and the mark that says *pause here*.
+**Ajeg** — Javanese for *steady, level, the same every time*. Not stillness:
+regularity. It is what you say about something that holds its shape day after
+day — a habit that doesn't slip, a line that stays true.
 
-### Logomark
+That is the honest claim of a Pomodoro app. You do not get calm from a timer.
+You get it from doing the same thing at the same size, often enough that it
+stops costing anything.
 
-**The sukun diacritic is a small circle.** So is the focus ring. They are the same mark at two scales, and that is the entire identity — nothing else needs inventing.
+### The mark is the mascot
 
-```
-       ╭───╮            the mark: a stroked circle,
-      │     │           open at the top-right by ~40°
-      │     │           
-       ╰───╯            = the diacritic
-                        = a progress ring mid-session
-                        = a day that isn't finished
-```
+**There is one logo and it is the character on the app icon.** A charcoal blob
+with a green sprout. No abstract mark sits beside it — an app this size cannot
+carry two identities, and the icon is the one people actually learn, because it
+is the one they tap.
 
-Spec:
+This replaces the v1 ring (the sukun diacritic, dead with the name) and a
+short-lived plumb-line mark drawn for the rename. Both were solving a problem
+the icon had already solved.
 
-- Circle, 2px stroke at 24px, scaling to 8% of the total size.
-- **Open at the top-right, 40° gap**, starting at 12 o'clock. The gap is what distinguishes it from a plain circle and what makes it read as a ring in progress.
-- `stroke-linecap: round`.
-- Stroke uses `currentColor`, so the logomark re-tints with whatever it sits in — brand green on the charcoal home tile, charcoal on a green card.
-- One SVG, used at every size. No separate simplified mark; it's already the simplest thing it can be.
+- Source art: `public/images/app.jpeg` (the square icon) and
+  `public/images/mascot/*.png` — the character alone on transparent ground,
+  320×320, ~5KB each.
+- Six expressions: `normal`, `thinking`, `resting`, `surprised`, `happy`,
+  `cheering`. Same character every time, so choosing one never dilutes the
+  brand. The screen picks the expression: a problem gets `surprised`, a wait
+  gets `resting`, an empty state gets `thinking`.
+- Component: `src/components/brand/Mascot.tsx`, `<Mascot size mood />`.
+- Raster, plain `<img>`, never `next/image`: it has to render on the offline
+  screen, where `/_next/image` is unreachable. `public/` is precached; the
+  optimiser's output is not.
+- It does not re-tint. The mascot is charcoal-and-green in every theme, the
+  same way the icon is. Anything that needed a `currentColor` glyph wanted an
+  icon, not the logo — use lucide.
+- Because it does not re-tint, it always sits on a **cream disc**:
+  `--brand-ground` (`#f4f5ef`), sampled from the icon art's own field and the
+  one token that is *not* redefined in dark mode. Charcoal on a dark canvas is
+  invisible, and every dark surface token is darker than the character. The
+  disc is 100% of the box, the character 76% of it. In light mode the disc is
+  within a hair of the canvas and reads as nothing, which is the intent.
+- A green disc was tried first — it matches the hill on the icon — and it
+  swallowed the green sprout. Cream keeps both halves of the character.
+- There is no vector mark and no `public/icons/mark.svg`. `npm run icons` and
+  `scripts/generate-icons.mjs` are gone with it; the app icons are cut from the
+  source art by hand, which is why the script kept trying to overwrite them.
+
+In-app placements: the onboarding lockup, the error screen, the offline screen,
+phase placeholders. Sizes 20–72.
 
 ### Wordmark
 
-`sukun` set in **Outfit, wght 600**, all lowercase, tracking `-0.02em`. Lowercase because the word means quiet and small caps would be shouting.
+`ajeg` set in **Outfit, wght 600**, all lowercase, tracking `-0.02em`. Lowercase
+because it is an everyday word and an even, unshouted line is the point of it.
 
-The mark sits to the left of the wordmark at 1.2× the cap height, with a gap of 0.4× the cap height. In the app header, the mark can also float above the *u* as the diacritic actually would — a nice detail for the marketing site, too clever for the product UI. Use the side-by-side lockup in-app.
+The mascot sits to the left of the wordmark at 1.6× the cap height, with a gap
+of 0.4× the cap height — larger than a glyph lockup would take, because a face
+needs its features to survive.
 
-### App icon
-
-**The icon is the mascot, not the mark.** A charcoal blob with a green sprout, peering over a green hill on cream — a home screen full of glyphs, and this one is a face. Source art: `public/images/app.jpeg`.
-
-- The icon does not follow the system theme; a home screen icon that changes is a home screen icon nobody finds.
-- Generated from the source square: `src/app/apple-icon.png` 180, `public/icons/192.png`, `public/icons/512.png`.
-- Maskable variant: full bleed at 512. The art already carries its own margin — the sprout tip sits ~13% from the top, inside the 80% safe circle — so insetting it only opens cream gutters where the hill should reach the edge.
-- Favicon (`src/app/icon.png`, 48px): cropped to the head with the hill bled to the edges. At tab-strip size the full icon's cream margin eats the character.
-- There is no `icon.svg`. Next prefers an SVG over the PNG for the tab icon, and the one that shipped was the v1 teal mark — keeping it would have kept the old logo on tabs.
-- The logomark ring still owns the in-app brand: header wordmark, error and phase placeholders, progress rings. Icon and mark are allowed to be different things.
+**Neither mark nor wordmark appears on Home.** An app's own home screen does not
+need to tell you which app you opened — the header carries the screen name
+("Focus") and a line of state instead.
 
 ### Tagline
 
-**"Stillness, on a timer."**
+**"Steady, day after day."**
 
-Backups, in order: "Quiet work, counted." · "A calmer way to focus." Pick one and use it everywhere — app store copy, OG description, Reddit post, manifest. A tagline that changes per channel isn't a tagline.
+Backups, in order: "The same thing, every day." · "A calmer way to focus." Pick one and use it everywhere — app store copy, OG description, Reddit post, manifest. It ships in `src/app/layout.tsx` and `src/app/manifest.ts`; change it in both or neither. A tagline that changes per channel isn't a tagline.
 
 ### Voice
 
-The name sets the register. Plain, unhurried, never exclamatory. The app does not celebrate at you, does not warn you, does not use the word "crush." Empty states invite; errors explain. See [05-screens.md](05-screens.md) for the exact copy — it's written this way already.
+The name sets the register. Plain, unhurried, never exclamatory — *ajeg* is a plain word and the copy stays at its level. The app does not celebrate at you, does not warn you, does not use the word "crush." Empty states invite; errors explain. See [05-screens.md](05-screens.md) for the exact copy — it's written this way already.
 
 ### Naming risk, noted
 
-In Indonesian, *buah sukun* is breadfruit. In an Indonesian-facing launch, always pair the name with the tagline or the Arabic on first mention so the reading lands on stillness. In English-language channels the collision doesn't exist.
+For an Indonesian or Javanese audience *ajeg* needs no gloss — it reads as "consistent" on sight, which is the whole pitch. For English channels it is an opaque four-letter word, so first mention pairs it with the tagline. That is the trade the name makes: instantly meaningful at home, a blank slate abroad.
 
-Before the domain purchase: check `sukun.app`, `sukun.so`, `getsukun.com`, and run a trademark search in the classes for software. This is unverified.
+Before the domain purchase: check `ajeg.app`, `ajeg.so`, `getajeg.com`, and run a trademark search in the classes for software. This is unverified. Note the Postgres schema stays `sukun` — it is shared infrastructure, not branding (rule 9 in CLAUDE.md).
 
 ---
 
@@ -268,7 +292,7 @@ border *and* a shadow — on a grey canvas that reads as two edges.
 --shadow-sm:  0 1px 2px  rgb(41 42 44 / 0.04);
 --shadow-md:  0 2px 12px rgb(41 42 44 / 0.05);   /* every card */
 --shadow-lg:  0 8px 28px rgb(41 42 44 / 0.12);   /* sheets, the tab capsule */
---shadow-fab: 0 8px 24px rgb(156 210 55 / 0.35); /* the one green action */
+--shadow-fab: 0 8px 24px rgb(156 210 55 / 0.35); /* unused since issue #6 */
 ```
 
 The floating action is the only element with a *coloured* shadow. It is the
@@ -366,12 +390,21 @@ between tabs with Motion's `layoutId`. Inactive: the icon at 70% white.
 
 ### The floating action
 
-A 56px `--green` circle in that gap, raised 15px out of the capsule, with
-`--shadow-fab`. Icon only, 26px, charcoal; the label is its `aria-label`.
+A 56px `--green` circle in that gap, raised 15px out of the capsule, ringed by
+6px of `--text-primary` — the capsule's own fill, so the button reads as cut
+out of the bar rather than stuck on top of it. Icon only, 26px, charcoal; the
+label is its `aria-label`.
 
-It belongs to the **screen**, not the shell: pages register one through
-`usePageAction` and the shell renders whatever is there. The gap keeps its
-width when no action is registered, so the tabs never shift between routes.
+**No glow.** `--shadow-fab` (a green 24px bloom) used to sit under the ring and
+washed green over both the ring and the capsule around it, which read as a ring
+in a slightly different charcoal than the bar it is cut from — issue #6. The
+ring's colour and the bar's have to be the same token and nothing may tint
+either. The token is still defined but no longer used.
+
+It belongs to the **shell**, not the screen, and it is on every screen that has
+the bar: it always means "open the Add menu". Detail screens used to hide it
+(`useHideFab`), which made the bar change shape as you moved through the app —
+gone, with the hook.
 
 ### Button
 

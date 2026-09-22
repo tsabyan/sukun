@@ -112,7 +112,7 @@ export function AccountGroup() {
   return (
     <SettingsGroup
       title="Account"
-      footnote="Sukun works without an account. Everything you have done so far is already saved on this device."
+      footnote="Ajeg works without an account. Everything you have done so far is already saved on this device."
     >
       {sent ? (
         <div className="flex items-start gap-3 px-4 py-4">

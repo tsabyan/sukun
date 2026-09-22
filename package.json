@@ -1,5 +1,5 @@
 {
-  "name": "sukun",
+  "name": "ajeg",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -9,8 +9,7 @@
     "lint": "eslint",
     "test": "vitest run --config vitest.config.mts",
     "test:watch": "vitest --config vitest.config.mts",
-    "db:bundle": "bash -c 'printf \"%s\\n\" \"-- Sukun — full schema, generated from supabase/migrations/*.sql\" > supabase/apply-all.sql; for f in supabase/migrations/*.sql; do printf \"\\n-- %s\\n\" \"$(basename $f)\" >> supabase/apply-all.sql; cat $f >> supabase/apply-all.sql; done'",
-    "icons": "node scripts/generate-icons.mjs",
+    "db:bundle": "bash -c 'printf \"%s\\n\" \"-- Ajeg — full schema, generated from supabase/migrations/*.sql\" > supabase/apply-all.sql; for f in supabase/migrations/*.sql; do printf \"\\n-- %s\\n\" \"$(basename $f)\" >> supabase/apply-all.sql; cat $f >> supabase/apply-all.sql; done'",
     "test:e2e": "playwright test"
   },
   "dependencies": {

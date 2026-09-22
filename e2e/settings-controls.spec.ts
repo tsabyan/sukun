@@ -12,7 +12,7 @@ import { expect, test, type Page } from '@playwright/test'
 
 async function skipOnboarding(page: Page) {
   const skip = page
-    .getByRole('dialog', { name: 'Welcome to Sukun' })
+    .getByRole('dialog', { name: 'Welcome to Ajeg' })
     .getByRole('button', { name: /^Skip$/ })
   for (let i = 0; i < 3; i++) {
     if (await skip.isVisible().catch(() => false)) {

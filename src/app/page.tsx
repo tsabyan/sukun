@@ -5,14 +5,13 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { Settings } from 'lucide-react'
-import { Logomark } from '@/components/brand/Logomark'
 import { HeroCard, HeroWeekBars } from '@/components/ui/HeroCard'
 import { Pill } from '@/components/ui/Pill'
 import { StatRow, StatTile } from '@/components/ui/StatTile'
-import { NowFocusingBanner } from '@/components/home/NowFocusingBanner'
 import { HOME_TASK_ROWS, TodayTasksCard } from '@/components/home/TodayTasksCard'
 import { TodayHabitsCard, type HomeHabit } from '@/components/home/TodayHabitsCard'
 import { TaskFormSheet } from '@/components/tasks/TaskFormSheet'
+import { SessionBanner } from '@/components/timer/SessionBanner'
 import { TimerAnnouncer } from '@/components/timer/TimerAnnouncer'
 import { getRecentDayTotals, getStreaks, live, toggleHabitDay } from '@/lib/db/repo'
 import { currentStreak, isScheduled, rate30 } from '@/lib/habits/streaks'
@@ -97,16 +96,13 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col gap-3.5">
+      {/* No logo tile. The app name on its own home screen is decoration —
+          the screen says what it is, and the brand lives on the icon. */}
       <header className="flex min-h-[52px] items-center justify-between gap-3">
-        <span className="inline-flex min-w-0 items-center gap-3">
-          <span className="inline-flex size-11 shrink-0 items-center justify-center rounded-full bg-ink">
-            <Logomark size={18} className="text-green" />
-          </span>
-          <span className="flex min-w-0 flex-col">
-            <span className="text-title-s text-ink">Sukun</span>
-            <span className="truncate text-body-sm text-ink-2">
-              {data ? greeting(data.streaks.current) : ' '}
-            </span>
+        <span className="flex min-w-0 flex-col">
+          <h1 className="text-title-l text-ink">Focus</h1>
+          <span className="truncate text-body-sm text-ink-2">
+            {data ? greeting(data.streaks.current) : ' '}
           </span>
         </span>
 
@@ -119,7 +115,7 @@ export default function HomePage() {
         </Link>
       </header>
 
-      <NowFocusingBanner />
+      <SessionBanner />
 
       <HeroCard
         title="Today"

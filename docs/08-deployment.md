@@ -192,8 +192,8 @@ import type { MetadataRoute } from 'next'
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Sukun — Focus Timer',
-    short_name: 'Sukun',
+    name: 'Ajeg — Focus Timer',
+    short_name: 'Ajeg',
     description: 'A calm Pomodoro timer and daily planner.',
     start_url: '/',
     display: 'standalone',

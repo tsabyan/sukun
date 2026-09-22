@@ -17,7 +17,7 @@
 | Drag and drop | **@dnd-kit** (core, sortable, utilities) — planner only | Cross-container dragging with a keyboard sensor. Short single-axis lists (subtasks) use Motion's `Reorder` instead; dnd-kit earns its weight only where a row moves *between* containers. |
 | Dates | **date-fns** v4 | Tree-shakeable, timezone-aware via `@date-fns/tz`. |
 | Testing | **Vitest** + **fake-indexeddb** for repo tests; **Playwright** for the timer E2E | The timer is the one thing that must be tested properly. `fake-indexeddb` lets the whole data layer run under Node, so repo behaviour is asserted rather than clicked through; Playwright covers what only a browser can prove — a real Worker, a real backgrounded tab. |
-| Icons | **sharp** (dev only, via `npm run icons`) | Renders the PWA icons from the logomark's own geometry, so a binary in the repo cannot drift from the component. Already present as a Next dependency. |
+| Icons | none | The app icons are cut from `public/images/app.jpeg` by hand and committed. The generator that rendered them from a vector mark is gone with the mark — docs/04 §0.1. **sharp** stays in the tree as Next's image dependency, not ours. |
 
 **Deliberately not used:** any ORM (Supabase JS client is enough), Redux, a component library (the design is too specific to fight defaults), a charting library, `next-pwa` (unmaintained).
 

@@ -18,7 +18,7 @@ export function DevBridge() {
         const w = window as unknown as Record<string, unknown>
         w.__repo = repoModule.repo
         w.__db = schemaModule.db
-        console.info('[sukun] window.__repo and window.__db ready')
+        console.info('[ajeg] window.__repo and window.__db ready')
       },
     )
 

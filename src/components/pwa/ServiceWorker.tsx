@@ -17,7 +17,7 @@ export function ServiceWorker() {
 
     const register = () => {
       navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch((error) => {
-        console.warn('[sukun] service worker registration failed', error)
+        console.warn('[ajeg] service worker registration failed', error)
       })
     }
 

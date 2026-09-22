@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
-import { Logomark } from '@/components/brand/Logomark'
+import { Mascot } from '@/components/brand/Mascot'
 
 /**
  * Route-level error boundary.
@@ -19,12 +19,12 @@ export default function RouteError({
   reset: () => void
 }) {
   useEffect(() => {
-    console.error('[sukun] route error', error)
+    console.error('[ajeg] route error', error)
   }, [error])
 
   return (
     <div className="flex flex-col items-center gap-5 pt-24 text-center">
-      <Logomark size={32} className="text-ink-3" />
+      <Mascot size={72} mood="surprised" />
       <h1 className="text-title-l font-display text-ink">This screen stopped working</h1>
       <p className="max-w-sm text-body text-ink-2">
         Your tasks and sessions are safe on this device — nothing was lost. Try loading

@@ -4,6 +4,9 @@
  * Keep it small, dependency-free, and defensive: if anything throws, the page
  * must still render.
  */
+// `sukun.*` keys survive the Ajeg rename on purpose: they are already written
+// on every installed device, and a new prefix would reset theme and re-run
+// onboarding for everyone. Same reasoning as the Dexie name in db/schema.ts.
 export const THEME_STORAGE_KEY = 'sukun.theme'
 export const PHASE_STORAGE_KEY = 'sukun.phase'
 export const ONBOARDED_STORAGE_KEY = 'sukun.onboarded'

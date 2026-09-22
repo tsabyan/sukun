@@ -1,6 +1,6 @@
 # 05 — Screen Specs
 
-Sukun is a phone app that happens to run in a browser. There is one layout — a
+Ajeg is a phone app that happens to run in a browser. There is one layout — a
 single 440px column, centred at any window width — and every screen below is
 specified at 390px. There is no desktop adaptation, because there is no desktop
 version to adapt: the thumb zone is the whole argument for the bottom bar, and
@@ -63,11 +63,11 @@ every other thing on the page feel like a footnote to a clock.
 
 ```
 ┌──────────────────────────────────┐
-│  ◍  Sukun                    ⚙︎  │
-│     6 day streak · Wednesday     │
+│  Focus                       ⚙︎  │
+│  6 day streak · Wednesday        │
 │                                  │
 │  ┌ Focusing · Update API docs ─┐ │  B2 only — charcoal, tap → /focus
-│  │ 24:13 left · session 3 of 4 ⏸│ │
+│  │ 24:13 left                  ⏸│ │
 │  └──────────────────────────────┘ │
 │  ┌────────────────── green ────┐ │
 │  │ Today          [ Wednesday ]│ │
@@ -95,10 +95,30 @@ every other thing on the page feel like a footnote to a clock.
 
 **Elements**
 
-1. **Header** — charcoal logo tile, "Sukun", and one line of state (streak +
-   weekday). Settings gear on the right. No back button; this is home.
-2. **Now focusing banner** (B2) — renders only while the machine is not idle.
-   Charcoal, 64px, taps through to `/focus`, carries one pause/resume control.
+1. **Header** — "Focus" (the tab's own name) over one line of state (streak +
+   weekday). Settings gear on the right. No back button; this is home. **No
+   logo tile and no wordmark**: the app does not introduce itself on the screen
+   you open ten times a day — docs/04-design-system.md §0.1.
+2. **Now focusing** (B2) — no longer Home's alone. The same charcoal card now
+   renders directly **under the header on every screen** and is **sticky**: the
+   header scrolls away, this does not. A session is the one piece of state that
+   stays true however far down a screen you are, and a pause control you have
+   to scroll back up for is one you stop using. It sits at `z-20` — under the
+   tab bar (30), toasts (40) and sheets (50) — and carries a canvas bleed
+   (`-mx-4`) so content passes behind an opaque strip instead of showing
+   through the corners. It
+   carries one pause/resume control and renders nothing while the machine is
+   idle. `src/components/timer/SessionBanner.tsx`, emitted by `PageHeader`;
+   Home places it by hand under its own header.
+
+   Not on **Settings** — you are there to change the machine, not watch it —
+   and not on `/focus`, which *is* the session. It carries no session counter:
+   the old "session 1 of 4" came from the long-break cycle and read as a claim
+   about the task (see §S2).
+
+   A version floating over the tab bar was built first and rejected: it read as
+   a notification sitting on top of the app rather than as part of the page.
+   Issue #6.
 3. **Today hero** — green card. `done/total` across tasks *and* habits, because
    a day is made of both. Seven bars underneath: focus time per day for the
    trailing week, normalised to that week's maximum; a zero day still draws an
@@ -198,7 +218,7 @@ owned a settings row and a route, and nobody needs two clocks.
 
 ```
 ┌──────────────────────────────────┐
-│  (⌄)     [ Session 3 of 4 ]  (🔊)│
+│  (⌄)     [ Session 1 of 3 ]  (🔊)│
 │                                  │
 │              FOCUS               │
 │             24:13                │  display-xl, tabular
@@ -211,6 +231,16 @@ owned a settings row and a route, and nobody needs two clocks.
 └──────────────────────────────────┘
 ```
 
+- **The pill counts the task, not the cycle.** With a task attached it reads
+  `Session {task.completedPomodoros + 1} of {task.estimatedPomodoros}`; with no
+  task it falls back to the long-break cycle (`of sessionsUntilLongBreak`). It
+  used to always read the cycle — "Session 1 of 4" on a task estimated at one
+  session, which is a claim about the task and was wrong for every task not
+  estimated at four. The dots below still show the cycle: that is the machine's
+  business. Issue #6.
+- **The progress line has no CSS width transition.** It is re-rendered every
+  second anyway, and a transition does not advance while the tab is hidden —
+  which is exactly what this app tells you to do. Issue #6.
 - **Minimise** (⌄) returns to Home with the clock still running. This screen is
   a *view* of the machine, never the machine itself.
 - **Reset** asks for confirmation (B9) only when more than 60 seconds have
@@ -231,9 +261,9 @@ owned a settings row and a route, and nobody needs two clocks.
 
 ```
 ┌──────────────────────────────────┐
-│  Tasks                    ＋  ⚙︎  │
+│  Tasks                        ⚙︎  │
 │  ┌──────────┬──────────┐         │
-│  │ Active 8 │Completed │  ↕ Recent│
+│  │ Active 8 │Completed │         │
 │  └──────────┴──────────┘         │
 │  ⟨ bug · code-review · docs ⟩    │  horizontal tag chips
 │                                  │
@@ -251,7 +281,12 @@ owned a settings row and a route, and nobody needs two clocks.
 **Elements**
 
 1. **Header** — title, add button (opens create sheet), settings.
-2. **Segmented control** — Active / Completed, with counts. Sort menu on the right: Recent, Priority, Due date, A–Z.
+2. **Segmented control** — Active / Completed, with counts. **No sort control.**
+   The four orders (Recent · Priority · Due date · A–Z) shipped as chips behind
+   a header button and never ordered the list the way the labels promised, so
+   the button was a lie you had to tap twice to find. Removed with the chips
+   and the `sort` argument at the call site — issue #6. The list is the repo's
+   default order; bring sorting back only with the repo query to make it true.
 3. **Tag chips** — horizontal scroll, multi-select filter. Selected chips fill with `--accent-muted`.
 4. **Free-tier meter** — visible only when `active tasks ≥ 7`. Shows "N of 10 tasks" with a progress bar and a Pro badge. At 10, the add button opens the upsell sheet instead of the create sheet.
 5. **Task card** — 4px colored left rail (task color), squircle icon tile, title, subtask progress bar with `done/total`, estimate chip, recurring badge, and a right-side complete button. Swipe left: Complete · Delete.
@@ -412,8 +447,14 @@ A page, not a sheet: 22 badges in five groups is a screen's worth of content.
 Green hero with `6 / 22`, the next badge's name and its requirement, and a
 progress bar. Then one card per group — First steps · Sessions · Streaks ·
 Depth · Consistency — each with an `n of m` chip and a three-column grid.
-Locked badges keep their requirement (as a tooltip and for screen readers):
-a goal you cannot see is not a goal.
+Locked badges keep their requirement: a goal you cannot see is not a goal.
+
+**Every tile is a button** (E3b). Tapping one opens a sheet with the badge, its
+state, and the requirement under "How to unlock" — or "What it took" plus the
+date it was earned, for one already held. The requirement used to live only in
+a `title` tooltip and the screen-reader label, which on a phone meant a locked
+badge was a padlock and two words with no way to find out what it wanted.
+Issue #6 follow-up. `src/components/insights/AchievementSheet.tsx`.
 
 Evaluated after every completed session. Unlock shows a single quiet toast —
 badge icon, name, one line. No modal, no confetti.
@@ -457,6 +498,10 @@ rather than a settings corner.
 - **D6 · New habit** — sheet. Identity chips, name, then the schedule: seven
   day toggles pre-set to weekdays, with Every day / Weekdays / Weekends
   presets. A habit can never end up scheduled on no days.
+  With **no identities yet**, the chips are replaced by one button — "Add an
+  identity first" — which hands over to D5 and comes back: creating the
+  identity reopens this sheet with it already selected. It used to be a red
+  pill stating a requirement you could not act on. Issue #6.
 - **D7 · Delete identity** — confirm sheet; the identity and all its habits go.
 
 Streak maths lives in `lib/habits/streaks.ts`. Today not yet done never breaks

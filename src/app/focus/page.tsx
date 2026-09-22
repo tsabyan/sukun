@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useLiveQuery } from 'dexie-react-hooks'
 import {
   Check,
   ChevronDown,
@@ -21,6 +22,7 @@ import { Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
 import { AttachTaskSheet } from '@/components/timer/AttachTaskSheet'
 import { TimerAnnouncer } from '@/components/timer/TimerAnnouncer'
+import { live } from '@/lib/db/repo'
 import { useTimerStore } from '@/lib/timer/store'
 import { elapsedMs, nextPhase } from '@/lib/timer/machine'
 import { formatCountdown, formatDuration } from '@/lib/utils/dates'
@@ -77,6 +79,17 @@ export default function FocusScreen() {
       : s.durations.shortBreak
   })
 
+  /**
+   * The attached task's own plan. The pill used to count the long-break cycle
+   * — always "of 4", whatever the task asked for — which read as a claim about
+   * the task and was wrong for every task not estimated at four sessions. With
+   * a task attached, the count is that task's; the dots below still show the
+   * cycle, which is the machine's business, not the task's. Issue #6.
+   */
+  const task = useLiveQuery(() => (taskId ? live.task(taskId) : undefined), [taskId])
+  const taskTotal = task?.estimatedPomodoros ?? 0
+  const taskDone = task?.completedPomodoros ?? 0
+
   const [pickerOpen, setPickerOpen] = useState(false)
   const [confirmReset, setConfirmReset] = useState(false)
   const [elapsedLabel, setElapsedLabel] = useState('')
@@ -120,12 +133,18 @@ export default function FocusScreen() {
 
         <Pill tone={onBreak ? 'neutral' : 'dark'}>
           {justFinished
-            ? `Session ${Math.max(1, sessionIndex)} of ${perCycle} done`
+            ? taskTotal > 0
+              ? `${Math.min(taskDone, taskTotal)} of ${taskTotal} done`
+              : `Session ${Math.max(1, sessionIndex)} of ${perCycle} done`
             : paused
               ? 'Paused'
               : onBreak
-                ? `${sessionIndex} of ${perCycle} done`
-                : `Session ${sessionIndex + 1} of ${perCycle}`}
+                ? taskTotal > 0
+                  ? `${Math.min(taskDone, taskTotal)} of ${taskTotal} done`
+                  : `${sessionIndex} of ${perCycle} done`
+                : taskTotal > 0
+                  ? `Session ${Math.min(taskDone + 1, taskTotal)} of ${taskTotal}`
+                  : `Session ${sessionIndex + 1} of ${perCycle}`}
         </Pill>
 
         <IconButton
@@ -175,8 +194,14 @@ export default function FocusScreen() {
               onBreak ? 'bg-surface/20' : 'on-hero-strong',
             )}
           >
+            {/* No width transition. The bar is re-rendered every second
+                anyway, so the animation bought nothing — and a CSS transition
+                does not advance while the tab is hidden, which is exactly what
+                this app tells you to do (lock the phone, switch apps). Coming
+                back could leave the fill parked at the value it had when you
+                left. Issue #6. */}
             <div
-              className={cn('h-full rounded-full transition-[width] duration-500', onBreak ? 'bg-green' : 'bg-ink')}
+              className={cn('h-full rounded-full', onBreak ? 'bg-green' : 'bg-ink')}
               style={{ width: `${Math.round(progress * 100)}%` }}
             />
           </div>

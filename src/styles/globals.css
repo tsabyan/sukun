@@ -1,7 +1,7 @@
 @import "tailwindcss";
 
 /* ==========================================================================
-   Sukun design tokens — docs/04-design-system.md
+   Ajeg design tokens — docs/04-design-system.md
    Every color, radius, shadow, and duration in the app comes from this file.
    ========================================================================== */
 
@@ -19,6 +19,11 @@
   /* — neutrals: warm-grey paper, charcoal ink */
   --canvas: #f0f0f1;
   --surface: #ffffff;
+  /* The cream field of the app icon art, sampled from public/images/app.jpeg.
+     Deliberately NOT redefined under [data-theme="dark"]: it is the mascot's
+     own ground, and the character is charcoal, so it has to stay light in
+     both themes or the logo disappears. docs/04-design-system.md §0.1. */
+  --brand-ground: #f4f5ef;
   --surface-raised: #ffffff;
   --surface-sunken: #f0f0f1;
   --field: #f0f0f1;
@@ -147,6 +152,7 @@
 
 @theme inline {
   --color-canvas: var(--canvas);
+  --color-brand-ground: var(--brand-ground);
   --color-surface: var(--surface);
   --color-surface-raised: var(--surface-raised);
   --color-surface-sunken: var(--surface-sunken);
@@ -373,7 +379,7 @@
 
 /* Indeterminate sync bar — it sweeps rather than fills, because there is no
    meaningful percentage to report. */
-@keyframes sukun-sync {
+@keyframes ajeg-sync {
   0% {
     transform: translateX(-100%);
   }
@@ -383,7 +389,7 @@
 }
 
 /* The separator between MM and SS — a slow heartbeat, not a blink. */
-@keyframes sukun-pulse {
+@keyframes ajeg-pulse {
   0%,
   100% {
     opacity: 0.35;

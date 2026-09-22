@@ -6,9 +6,9 @@ import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useVirtualizer } from '@tanstack/react-virtual'
-import { ArrowDownUp, ListPlus, Lock, Plus, Settings } from 'lucide-react'
+import { ListPlus, Lock, Plus, Settings } from 'lucide-react'
 import { Card } from '@/components/ui/Card'
-import { Button, IconButton } from '@/components/ui/Button'
+import { Button } from '@/components/ui/Button'
 import { SegmentedControl } from '@/components/ui/SegmentedControl'
 import { ChipButton, Pill } from '@/components/ui/Pill'
 import { ConfirmSheet } from '@/components/ui/ConfirmSheet'
@@ -35,14 +35,12 @@ import {
 import { formatDuration, today } from '@/lib/utils/dates'
 import type { Task, TaskStatus } from '@/lib/db/types'
 
-type SortKey = 'recent' | 'priority' | 'due' | 'alpha'
-
-const SORTS: Array<{ key: SortKey; label: string }> = [
-  { key: 'recent', label: 'Recent' },
-  { key: 'priority', label: 'Priority' },
-  { key: 'due', label: 'Due date' },
-  { key: 'alpha', label: 'A–Z' },
-]
+/*
+ * No sort control. The four orders (recent / priority / due / A–Z) shipped as
+ * chips behind a header button and never did what the labels promised, so the
+ * button was a lie you had to tap twice to discover. The list is newest-first,
+ * which is what the header button's default was anyway — issue #6.
+ */
 
 /** Above this, render only what fits on screen — docs/02-architecture.md §7. */
 const VIRTUALIZE_ABOVE = 100
@@ -75,9 +73,7 @@ function TasksScreen() {
   const wantsNew = searchParams.get('new') === '1'
 
   const [status, setStatus] = useState<TaskStatus | 'all'>('active')
-  const [sort, setSort] = useState<SortKey>('recent')
   const [tagIds, setTagIds] = useState<string[]>([])
-  const [sortOpen, setSortOpen] = useState(false)
 
   const [formOpen, setFormOpen] = useState(false)
   const [upsellOpen, setUpsellOpen] = useState(false)
@@ -95,9 +91,8 @@ function TasksScreen() {
       listTasks({
         status: status === 'all' ? undefined : status,
         tagIds: tagIds.length ? tagIds : undefined,
-        sort,
       }),
-    [status, sort, tagIds.join(',')],
+    [status, tagIds.join(',')],
     undefined,
   )
 
@@ -124,7 +119,6 @@ function TasksScreen() {
   useDevOpen('upsell', () => setUpsellOpen(true))
   useDevOpen('upsell-error', () => setUpsellOpen(true))
   useDevOpen('upsell-sent', () => setUpsellOpen(true))
-  useDevOpen('sort', () => setSortOpen(true))
   useDevOpen('task-discard', () => setFormOpen(true))
   useDevOpen(
     'task-delete',
@@ -188,9 +182,6 @@ function TasksScreen() {
         title="Tasks"
         actions={
           <>
-            <IconButton label="Sort tasks" onClick={() => setSortOpen((v) => !v)}>
-              <ArrowDownUp size={20} strokeWidth={1.75} />
-            </IconButton>
             <Link
               href="/settings"
               aria-label="Settings"
@@ -240,23 +231,6 @@ function TasksScreen() {
         value={status}
         onChange={setStatus}
       />
-
-      {sortOpen && (
-        <div className="flex flex-wrap gap-2">
-          {SORTS.map((option) => (
-            <ChipButton
-              key={option.key}
-              selected={sort === option.key}
-              onClick={() => {
-                setSort(option.key)
-                setSortOpen(false)
-              }}
-            >
-              {option.label}
-            </ChipButton>
-          ))}
-        </div>
-      )}
 
       {tags.length > 0 && (
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1">

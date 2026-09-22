@@ -3,7 +3,7 @@ import { addDays, fromLocalDate, today as todayLocal } from '@/lib/utils/dates'
 
 /**
  * Habit streak and completion maths — ported from the Tend prototype's
- * dates.ts, rebased onto Sukun's LocalDate strings so every calendar figure is
+ * dates.ts, rebased onto Ajeg's LocalDate strings so every calendar figure is
  * computed in the user's own timezone (docs/03-database.md). A "done set" is
  * the set of LocalDate strings a habit was completed on; callers build it from
  * the live, non-deleted habit_logs.

@@ -70,7 +70,7 @@ async function pushAnonTables(userId: string | null): Promise<void> {
       if (error && error.code !== '23505') throw error
       await db.outbox.bulkDelete(entries.map((e) => e.id))
     } catch (error) {
-      console.warn(`[sukun] ${table} push failed`, error)
+      console.warn(`[ajeg] ${table} push failed`, error)
       await db.transaction('rw', db.outbox, async () => {
         for (const entry of entries) {
           await db.outbox.update(entry.id, {
@@ -143,7 +143,7 @@ async function pushOnce(userId: string): Promise<{ pushed: number; stalled: numb
       await db.outbox.bulkDelete(entries.map((e) => e.id))
       pushed += entries.length
     } catch (error) {
-      console.warn(`[sukun] sync push failed for ${table}`, error)
+      console.warn(`[ajeg] sync push failed for ${table}`, error)
       // Bump attempts and reset the clock so backoff applies from now.
       await db.transaction('rw', db.outbox, async () => {
         for (const entry of entries) {
@@ -309,7 +309,7 @@ export async function syncNow(): Promise<void> {
       pendingCount: await db.outbox.count(),
     })
   } catch (error) {
-    console.warn('[sukun] sync cycle failed', error)
+    console.warn('[ajeg] sync cycle failed', error)
     useSyncStore.getState().set({ state: 'stalled' })
   } finally {
     running = false

@@ -1,9 +1,13 @@
-# Sukun — Calm Pomodoro Web App
+# Ajeg — Calm Pomodoro Web App
 
 A focus timer, daily planner, and task manager. Local-first PWA. Deployed free on Vercel + Supabase.
 
-> **Sukun** · سكون — Arabic for *stillness*, and the name of the diacritic ( ـْ ) that marks a pause.
-> The mark is a small circle. So is the focus ring. See [04-design-system.md](docs/04-design-system.md) §0.1.
+> **Ajeg** — Javanese for *steady, level, the same every time*. Not stillness: regularity.
+> The logo is the mascot on the app icon; there is no second, abstract mark. See [04-design-system.md](docs/04-design-system.md) §0.1.
+>
+> Renamed from Sukun. Two things kept the old name on purpose: the `sukun` Postgres schema
+> (shared database, not branding) and the local IndexedDB / `localStorage` names (renaming them
+> would orphan data already on people's devices).
 
 ## Doc index — read in this order
 
